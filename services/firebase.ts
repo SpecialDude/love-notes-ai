@@ -2,19 +2,32 @@ import { initializeApp } from "firebase/app";
 import { getFirestore, collection, addDoc, doc, getDoc } from "firebase/firestore";
 import { LetterData } from "../types";
 
-// --------------------------------------------------------
-// TODO: PASTE YOUR FIREBASE CONFIG HERE
-// Go to Firebase Console -> Project Settings -> General -> Your apps -> Config
-// --------------------------------------------------------
-const firebaseConfig = {
-  // Replace these with your actual config values from Firebase Console
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abcdef123456"
+// Helper to safely get env vars for Vite or Standard React App
+const getEnv = (key: string): string => {
+  // @ts-ignore
+  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env[`VITE_${key}`]) {
+    // @ts-ignore
+    return import.meta.env[`VITE_${key}`];
+  }
+  if (typeof process !== 'undefined' && process.env) {
+    return process.env[`REACT_APP_${key}`] || process.env[key] || '';
+  }
+  return '';
 };
+
+const firebaseConfig = {
+  apiKey: getEnv('FIREBASE_API_KEY'),
+  authDomain: getEnv('FIREBASE_AUTH_DOMAIN'),
+  projectId: getEnv('FIREBASE_PROJECT_ID'),
+  storageBucket: getEnv('FIREBASE_STORAGE_BUCKET'),
+  messagingSenderId: getEnv('FIREBASE_MESSAGING_SENDER_ID'),
+  appId: getEnv('FIREBASE_APP_ID')
+};
+
+// Debug: Check if config is loaded
+if (!firebaseConfig.apiKey) {
+  console.error("🔥 Firebase Config Error: API Key is missing. Check your .env file and ensure keys start with VITE_ or REACT_APP_");
+}
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
@@ -31,9 +44,18 @@ export const saveLetterToCloud = async (data: LetterData): Promise<string | null
     });
     console.log("Document written with ID: ", docRef.id);
     return docRef.id;
-  } catch (e) {
-    console.error("Error adding document: ", e);
-    alert("Could not save letter. Check your Firebase Config in services/firebase.ts");
+  } catch (e: any) {
+    console.error("🔥 Error adding document: ", e);
+    
+    // Specific error handling for common issues
+    if (e.code === 'permission-denied') {
+        alert("Firebase Permission Error: Please go to Firebase Console > Firestore > Rules and change them to 'allow read, write: if true;'");
+    } else if (e.code === 'unavailable') {
+        alert("Firebase Network Error: Check your internet connection or Firewall.");
+    } else {
+        alert(`Could not save letter. Error: ${e.message}`);
+    }
+    
     return null;
   }
 };

@@ -113,15 +113,21 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
     setIsSaving(true);
     const data = getLetterData();
     
-    // Save to Firestore
-    const id = await saveLetterToCloud(data);
-    setIsSaving(false);
-
-    if (id) {
-        // Create the clean short link
-        const url = `${window.location.origin}/?id=${id}`;
-        setGeneratedLink(url);
-        fireContinuousConfetti();
+    try {
+        // Save to Firestore
+        const id = await saveLetterToCloud(data);
+        
+        if (id) {
+            // Create the clean short link
+            const url = `${window.location.origin}/?id=${id}`;
+            setGeneratedLink(url);
+            fireContinuousConfetti();
+        }
+    } catch (e) {
+        console.error("Save failed", e);
+        alert("Something went wrong saving your letter.");
+    } finally {
+        setIsSaving(false);
     }
   };
 
