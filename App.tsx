@@ -14,44 +14,28 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const init = async () => {
-      // 1. Get Path Variable (myapp.com/ID_HERE)
-      // Remove leading slash
-      const pathId = window.location.pathname.substring(1);
-
-      // Simple validation to ensure it's likely an ID and not a file request (like favicon.ico or index.html)
-      // Firestore IDs are alphanumeric and don't contain dots.
-      if (pathId && pathId.length > 5 && !pathId.includes('.') && pathId !== 'index.html') {
-        setIsLoading(true);
-        const cloudData = await getLetterFromCloud(pathId);
-        if (cloudData) {
-          setViewData(cloudData);
-        } else {
-          // If 404, maybe redirect to home or show error, but here we just alert
-          console.warn("Letter not found for ID:", pathId);
-          // Optional: history.pushState(null, '', '/'); to reset URL if invalid
+      // 1. Hash Routing Support (/#/ID) - The Preferred, Robust Strategy
+      const hash = window.location.hash;
+      
+      // If hash looks like #/abc12345 (Firestore ID)
+      if (hash.startsWith('#/') && hash.length > 3) {
+        const id = hash.substring(2); // Remove #/
+        if (id) {
+           setIsLoading(true);
+           const cloudData = await getLetterFromCloud(id);
+           if (cloudData) {
+               setViewData(cloudData);
+           } else {
+               console.warn("Letter not found for ID:", id);
+           }
+           setIsLoading(false);
+           return;
         }
-        setIsLoading(false);
-        return;
       }
 
-      // 2. Legacy Support (Query Param ?id=...)
-      const urlParams = new URLSearchParams(window.location.search);
-      const queryId = urlParams.get('id');
-      if (queryId) {
-         setIsLoading(true);
-         const cloudData = await getLetterFromCloud(queryId);
-         if (cloudData) {
-             setViewData(cloudData);
-             // Optional: Clean URL to path format
-             window.history.replaceState(null, '', `/${queryId}`);
-         }
-         setIsLoading(false);
-         return;
-      }
-
-      // 3. Legacy Hash Support (#view?data=...)
-      if (window.location.hash.startsWith('#view')) {
-        const hashParams = new URLSearchParams(window.location.hash.split('?')[1]);
+      // 2. Legacy Hash Support (#view?data=...) - Backward compatibility
+      if (hash.startsWith('#view')) {
+        const hashParams = new URLSearchParams(hash.split('?')[1]);
         const dataString = hashParams.get('data');
         if (dataString) {
           const decoded = decodeLetterData(dataString);
@@ -59,6 +43,19 @@ const App: React.FC = () => {
         }
         setIsLoading(false);
         return;
+      }
+
+      // 3. Fallback: Check Path (for local dev with rewrites active)
+      // Only if no hash is present
+      const pathId = window.location.pathname.substring(1);
+      if (pathId && pathId.length > 5 && !pathId.includes('.') && pathId !== 'index.html' && !hash) {
+        // Attempt to load from path, but this often fails on static hosts (404)
+        const cloudData = await getLetterFromCloud(pathId);
+        if (cloudData) {
+          setViewData(cloudData);
+          setIsLoading(false);
+          return;
+        }
       }
 
       // Default: Creator Mode (Home)

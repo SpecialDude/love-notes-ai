@@ -119,9 +119,10 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
         const id = await saveLetterToCloud(data);
         
         if (id) {
-            // Create the clean short link using Path Variable
-            // e.g. https://love-notes.com/abc12345
-            const url = `${window.location.origin}/${id}`;
+            // Create the clean short link using HASH Routing
+            // e.g. https://love-notes.com/#/abc12345
+            // This prevents 404 errors on static hosting
+            const url = `${window.location.origin}/#/${id}`;
             setGeneratedLink(url);
             fireContinuousConfetti();
         }
