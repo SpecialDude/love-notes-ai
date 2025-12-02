@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
@@ -45,13 +44,14 @@ const ViewLetter: React.FC<Props> = ({ dataString, previewData, onBack }) => {
   const fireConfetti = () => {
     const themeColors = letter?.theme === ThemeType.NOIR ? ['#000', '#555'] : ['#ff4d4d', '#ff9a9e', '#ffd1dc'];
     
+    // Continuous confetti for 3.5 seconds
     const duration = 3500;
     const end = Date.now() + duration;
 
     (function frame() {
       // Left Cannon
       confetti({
-        particleCount: 4,
+        particleCount: 5,
         angle: 50,
         spread: 80,
         origin: { x: 0, y: 0.8 },
@@ -63,7 +63,7 @@ const ViewLetter: React.FC<Props> = ({ dataString, previewData, onBack }) => {
       
       // Right Cannon
       confetti({
-        particleCount: 4,
+        particleCount: 5,
         angle: 130,
         spread: 80,
         origin: { x: 1, y: 0.8 },

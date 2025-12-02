@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, Wand2, Copy, Check, Eye, Heart } from 'lucide-react';
 import { ThemeType, RelationshipType, LetterData } from '../types';
@@ -26,6 +25,18 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
   const [isCopied, setIsCopied] = useState(false);
   const [aiMode, setAiMode] = useState<'DRAFT' | 'POLISH'>((initialData?.content?.length || 0) > 50 ? 'POLISH' : 'DRAFT');
 
+  // Explicitly sync state if initialData changes (Fixes persistence issues)
+  useEffect(() => {
+    if (initialData) {
+        setSenderName(initialData.senderName);
+        setRecipientName(initialData.recipientName);
+        setRelationship(initialData.relationship);
+        setContent(initialData.content);
+        setSelectedTheme(initialData.theme);
+        setAiMode(initialData.content.length > 50 ? 'POLISH' : 'DRAFT');
+    }
+  }, [initialData]);
+
   const handleContentChange = (val: string) => {
     setContent(val);
     setAiMode(val.length > 50 ? 'POLISH' : 'DRAFT');
@@ -42,7 +53,6 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
     setContent(result);
     setAiMode('POLISH'); 
     
-    // Suggest theme only if it's a fresh draft or small content
     if (content.length < 20) {
         const suggested = await suggestTheme(result, relationship);
         if (suggested) setSelectedTheme(suggested);
@@ -65,30 +75,42 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
     onPreview(getLetterData());
   };
 
+  const fireContinuousConfetti = () => {
+      const duration = 3000;
+      const end = Date.now() + duration;
+
+      (function frame() {
+        // Left Cannon
+        confetti({
+          particleCount: 5,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0, y: 0.8 },
+          colors: ['#ff0000', '#ffa500', '#ffffff'],
+        });
+        
+        // Right Cannon
+        confetti({
+          particleCount: 5,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1, y: 0.8 },
+          colors: ['#ff0000', '#ffa500', '#ffffff'],
+        });
+
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      }());
+  };
+
   const handleGenerateLink = () => {
     if (!content) return alert("Please write a message first!");
     const data = getLetterData();
     const encoded = encodeLetterData(data);
     const url = `${window.location.origin}${window.location.pathname}#view?data=${encoded}`;
     setGeneratedLink(url);
-    
-    // Confetti from Left
-    confetti({
-      particleCount: 100,
-      angle: 60,
-      spread: 55,
-      origin: { x: 0, y: 0.8 },
-      colors: ['#ffffff', '#ff0000', '#ffa500']
-    });
-    
-    // Confetti from Right
-    confetti({
-      particleCount: 100,
-      angle: 120,
-      spread: 55,
-      origin: { x: 1, y: 0.8 },
-      colors: ['#ffffff', '#ff0000', '#ffa500']
-    });
+    fireContinuousConfetti();
   };
 
   const copyToClipboard = () => {
