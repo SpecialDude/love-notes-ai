@@ -50,10 +50,19 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
     
     setIsThinking(true);
     const result = await generateOrEnhanceMessage(content, senderName || 'Me', recipientName || 'My Love', relationship, aiMode);
+    
+    // Check if AI actually did anything (if not, it might be an API key issue)
+    if (result === content && content.length > 0) {
+       console.warn("AI returned identical content. Check API Key or Network.");
+    } else if (result === content && content.length === 0) {
+        // Empty draft returned empty
+        alert("Could not generate draft. Please check your API Key in the .env file.");
+    }
+
     setContent(result);
     setAiMode('POLISH'); 
     
-    if (content.length < 20) {
+    if (content.length < 20 && result.length > 20) {
         const suggested = await suggestTheme(result, relationship);
         if (suggested) setSelectedTheme(suggested);
     }

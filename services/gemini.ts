@@ -1,9 +1,32 @@
 import { GoogleGenAI } from "@google/genai";
 import { ThemeType, RelationshipType } from '../types';
 
-// Safely access process.env to avoid crashes in browser environments without polyfills
-const apiKey = (typeof process !== 'undefined' && process.env?.API_KEY) || '';
-const ai = new GoogleGenAI({ apiKey });
+// Robust API Key detection for various local environments
+const getApiKey = (): string => {
+  // 1. Vite Environment
+  // @ts-ignore
+  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_KEY) {
+    // @ts-ignore
+    return import.meta.env.VITE_API_KEY;
+  }
+  
+  // 2. Standard Node / Create React App Environment
+  if (typeof process !== 'undefined' && process.env) {
+    if (process.env.REACT_APP_API_KEY) return process.env.REACT_APP_API_KEY;
+    if (process.env.API_KEY) return process.env.API_KEY;
+  }
+
+  return '';
+};
+
+const apiKey = getApiKey();
+
+// Initialize AI only if key exists to prevent immediate crash
+const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
+
+if (!apiKey) {
+  console.warn("⚠️ LoveNotes Warning: No API Key found. AI features will be disabled. Please add VITE_API_KEY to your .env file.");
+}
 
 export const generateOrEnhanceMessage = async (
   input: string, 
@@ -12,7 +35,11 @@ export const generateOrEnhanceMessage = async (
   relationship: RelationshipType,
   mode: 'DRAFT' | 'POLISH'
 ): Promise<string> => {
-  if (!apiKey) return input;
+  // Safety check: Return original input if AI isn't configured
+  if (!ai || !apiKey) {
+    console.error("Gemini API Key is missing. Skipping AI generation.");
+    return input;
+  }
 
   try {
     let systemInstruction = '';
@@ -58,7 +85,7 @@ export const generateOrEnhanceMessage = async (
 };
 
 export const suggestTheme = async (message: string, relationship: RelationshipType): Promise<ThemeType> => {
-  if (!apiKey) return ThemeType.VELVET;
+  if (!ai || !apiKey) return ThemeType.VELVET;
 
   try {
     const response = await ai.models.generateContent({
