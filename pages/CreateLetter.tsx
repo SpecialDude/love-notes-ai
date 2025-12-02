@@ -52,7 +52,8 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
     const result = await generateOrEnhanceMessage(content, senderName || 'Me', recipientName || 'My Love', relationship, aiMode);
     
     if (result === content && content.length > 0) {
-       console.warn("AI returned identical content. Check API Key or Network.");
+       // Only warn if content didn't change (and wasn't empty)
+       // console.warn("AI returned identical content.");
     }
 
     setContent(result);
@@ -118,14 +119,15 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
         const id = await saveLetterToCloud(data);
         
         if (id) {
-            // Create the clean short link
-            const url = `${window.location.origin}/?id=${id}`;
+            // Create the clean short link using Path Variable
+            // e.g. https://love-notes.com/abc12345
+            const url = `${window.location.origin}/${id}`;
             setGeneratedLink(url);
             fireContinuousConfetti();
         }
     } catch (e) {
         console.error("Save failed", e);
-        alert("Something went wrong saving your letter.");
+        // Error handling is mostly done in saveLetterToCloud with alerts
     } finally {
         setIsSaving(false);
     }

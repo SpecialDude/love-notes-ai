@@ -14,25 +14,42 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const init = async () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const id = urlParams.get('id');
+      // 1. Get Path Variable (myapp.com/ID_HERE)
+      // Remove leading slash
+      const pathId = window.location.pathname.substring(1);
 
-      // Strategy 1: Firebase Short Link (?id=xyz)
-      if (id) {
+      // Simple validation to ensure it's likely an ID and not a file request (like favicon.ico or index.html)
+      // Firestore IDs are alphanumeric and don't contain dots.
+      if (pathId && pathId.length > 5 && !pathId.includes('.') && pathId !== 'index.html') {
         setIsLoading(true);
-        const cloudData = await getLetterFromCloud(id);
+        const cloudData = await getLetterFromCloud(pathId);
         if (cloudData) {
           setViewData(cloudData);
         } else {
-          // Fallback or error handling
-          alert("Letter not found or expired.");
+          // If 404, maybe redirect to home or show error, but here we just alert
+          console.warn("Letter not found for ID:", pathId);
+          // Optional: history.pushState(null, '', '/'); to reset URL if invalid
         }
         setIsLoading(false);
         return;
       }
 
-      // Strategy 2: Legacy Hash Support (#view?data=...)
-      // Good for backward compatibility if you had old links
+      // 2. Legacy Support (Query Param ?id=...)
+      const urlParams = new URLSearchParams(window.location.search);
+      const queryId = urlParams.get('id');
+      if (queryId) {
+         setIsLoading(true);
+         const cloudData = await getLetterFromCloud(queryId);
+         if (cloudData) {
+             setViewData(cloudData);
+             // Optional: Clean URL to path format
+             window.history.replaceState(null, '', `/${queryId}`);
+         }
+         setIsLoading(false);
+         return;
+      }
+
+      // 3. Legacy Hash Support (#view?data=...)
       if (window.location.hash.startsWith('#view')) {
         const hashParams = new URLSearchParams(window.location.hash.split('?')[1]);
         const dataString = hashParams.get('data');
@@ -44,7 +61,7 @@ const App: React.FC = () => {
         return;
       }
 
-      // Default: Creator Mode
+      // Default: Creator Mode (Home)
       setIsLoading(false);
     };
 
@@ -71,9 +88,6 @@ const App: React.FC = () => {
 
   // 1. Viewing a fetched letter (from Cloud or Link)
   if (viewData) {
-    // If we are viewing a shared letter, we don't allow "Back to Editor" 
-    // unless it was just a preview (handled below).
-    // But for simplicity, shared links just show the letter.
     return <ViewLetter data={viewData} />;
   }
 
