@@ -186,6 +186,7 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
                         { id: RelationshipType.CRUSH, label: 'Crush' },
                         { id: RelationshipType.FRIEND, label: 'Best Friend' },
                         { id: RelationshipType.SIBLING, label: 'Family' },
+                        { id: RelationshipType.SELF, label: 'Myself' },
                         { id: RelationshipType.OTHER, label: 'Other' },
                     ].map((rel) => (
                         <button 
@@ -266,7 +267,7 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
                             className="flex-[2] py-3.5 rounded-xl font-bold text-black bg-white hover:bg-gray-100 shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Heart size={18} className="text-rose-500 fill-rose-500 group-hover:scale-125 transition-transform duration-300" />}
-                            {isSaving ? 'Saving...' : 'Generate Magic Link'}
+                            {isSaving ? 'Generate Magic Link'}
                         </button>
                     </>
                 ) : (

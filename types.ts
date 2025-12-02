@@ -16,6 +16,7 @@ export enum RelationshipType {
   FRIEND = 'FRIEND',
   SIBLING = 'SIBLING',
   PARENT = 'PARENT',
+  SELF = 'SELF',
   OTHER = 'OTHER'
 }
 

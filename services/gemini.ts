@@ -56,6 +56,7 @@ export const generateOrEnhanceMessage = async (
         - FRIEND/BESTIE: Fun, appreciative, inside-joke vibes if applicable.
         - SIBLING: Caring but maybe slightly teasing (if appropriate), or deeply supportive.
         - PARENT: Respectful, grateful, loving.
+        - SELF: Reflective, hopeful, encouraging, kind, and forgiving to oneself. Focus on growth and self-love.
         
         Keep it under 200 words. No "Subject" lines. Just the body text.
       `;
@@ -97,7 +98,7 @@ export const suggestTheme = async (message: string, relationship: RelationshipTy
         Select the best visual Theme ID:
         - VELVET: For deep romance, valentines, anniversaries.
         - PASTEL: For lighthearted, cute, friendship, cheer up.
-        - MIDNIGHT: For deep spiritual connections, long distance, serious notes.
+        - MIDNIGHT: For deep spiritual connections, long distance, serious notes, or self-reflection.
         - EARTH: For parents, family, gratitude, apology, sincerity.
         - NOIR: For brothers, male friends, professional appreciation, or minimalists.
         
