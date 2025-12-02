@@ -3,29 +3,23 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 import { LetterData, ThemeType } from '../types';
 import { THEMES } from '../constants';
-import { decodeLetterData } from '../utils/encoding';
 import AnimatedBackground from '../components/AnimatedBackground';
 import MusicPlayer from '../components/MusicPlayer';
 import confetti from 'canvas-confetti';
 
 interface Props {
-  dataString?: string;
-  previewData?: LetterData;
+  data: LetterData; // Now receives fully hydrated data
   onBack?: () => void;
 }
 
 // Helper to safely get music URLs from environment variables
 const getEnvironmentMusic = (): string | null => {
   let envVal = '';
-  
-  // 1. Vite Environment
   // @ts-ignore
   if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_MUSIC_URLS) {
     // @ts-ignore
     envVal = import.meta.env.VITE_MUSIC_URLS;
-  } 
-  // 2. Create React App / Node Environment
-  else if (typeof process !== 'undefined' && process.env) {
+  } else if (typeof process !== 'undefined' && process.env) {
     envVal = process.env.REACT_APP_MUSIC_URLS || process.env.MUSIC_URLS || '';
   }
 
@@ -38,35 +32,23 @@ const getEnvironmentMusic = (): string | null => {
   return null;
 };
 
-const ViewLetter: React.FC<Props> = ({ dataString, previewData, onBack }) => {
-  const [letter, setLetter] = useState<LetterData | null>(null);
+const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
   const [step, setStep] = useState<'CLOSED' | 'OPENING' | 'READING'>('CLOSED');
   const [musicSrc, setMusicSrc] = useState<string>('');
 
   useEffect(() => {
-    let currentLetter: LetterData | null = null;
-    
-    if (previewData) {
-        currentLetter = previewData;
-        setLetter(previewData);
-    } else if (dataString) {
-      const decoded = decodeLetterData(dataString);
-      currentLetter = decoded;
-      setLetter(decoded);
-    }
-
-    if (currentLetter) {
+    if (data) {
         // Check for environment variable override first
         const envMusic = getEnvironmentMusic();
         if (envMusic) {
             setMusicSrc(envMusic);
         } else {
             // Fallback to theme-based music
-            const theme = THEMES[currentLetter.theme || ThemeType.VELVET];
+            const theme = THEMES[data.theme || ThemeType.VELVET];
             setMusicSrc(theme.musicUrl);
         }
     }
-  }, [dataString, previewData]);
+  }, [data]);
 
   const handleOpen = () => {
     setStep('OPENING');
@@ -83,14 +65,13 @@ const ViewLetter: React.FC<Props> = ({ dataString, previewData, onBack }) => {
   };
 
   const fireConfetti = () => {
-    const themeColors = letter?.theme === ThemeType.NOIR ? ['#000', '#555'] : ['#ff4d4d', '#ff9a9e', '#ffd1dc'];
+    const themeColors = data.theme === ThemeType.NOIR ? ['#000', '#555'] : ['#ff4d4d', '#ff9a9e', '#ffd1dc'];
     
     // Continuous confetti for 3.5 seconds
     const duration = 3500;
     const end = Date.now() + duration;
 
     (function frame() {
-      // Left Cannon
       confetti({
         particleCount: 5,
         angle: 50,
@@ -102,7 +83,6 @@ const ViewLetter: React.FC<Props> = ({ dataString, previewData, onBack }) => {
         scalar: 1.2,
       });
       
-      // Right Cannon
       confetti({
         particleCount: 5,
         angle: 130,
@@ -120,13 +100,11 @@ const ViewLetter: React.FC<Props> = ({ dataString, previewData, onBack }) => {
     }());
   };
 
-  if (!letter) return <div className="min-h-screen bg-black" />;
-
-  const theme = THEMES[letter.theme || ThemeType.VELVET];
+  const theme = THEMES[data.theme || ThemeType.VELVET];
 
   return (
     <div className={`min-h-screen relative overflow-hidden flex flex-col items-center justify-center ${theme.bgGradient}`}>
-      <AnimatedBackground theme={letter.theme} />
+      <AnimatedBackground theme={data.theme} />
       
       {/* Play the selected music (env override or theme default) */}
       {musicSrc && <MusicPlayer src={musicSrc} autoPlay={true} />}
@@ -167,7 +145,7 @@ const ViewLetter: React.FC<Props> = ({ dataString, previewData, onBack }) => {
                         >
                              {/* Preview Text on sliding card */}
                              <div className="w-full h-full opacity-30 overflow-hidden text-[6px] md:text-[8px] leading-relaxed select-none">
-                                {letter.content}
+                                {data.content}
                              </div>
                         </motion.div>
 
@@ -179,7 +157,7 @@ const ViewLetter: React.FC<Props> = ({ dataString, previewData, onBack }) => {
                         {/* Text on Envelope */}
                         <div className="absolute bottom-10 z-40 text-white/90 text-center font-elegant">
                              <p className="text-xs uppercase tracking-widest opacity-60 mb-1">For</p>
-                             <h2 className="text-2xl italic font-serif">{letter.recipientName}</h2>
+                             <h2 className="text-2xl italic font-serif">{data.recipientName}</h2>
                         </div>
                     </div>
 
@@ -240,21 +218,21 @@ const ViewLetter: React.FC<Props> = ({ dataString, previewData, onBack }) => {
 
                         <div className="flex-1 flex flex-col">
                             <div className="mb-8 opacity-60 text-xs font-serif uppercase tracking-widest text-center border-b border-current pb-4 shrink-0">
-                                {new Date(letter.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                {new Date(data.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                             </div>
 
                             <h1 className={`text-4xl md:text-5xl mb-8 ${theme.fontFamily} font-bold shrink-0`}>
-                                My Dearest {letter.recipientName},
+                                My Dearest {data.recipientName},
                             </h1>
                             
                             <div className={`text-lg md:text-2xl leading-relaxed whitespace-pre-wrap ${theme.fontFamily} opacity-90`}>
-                                {letter.content}
+                                {data.content}
                             </div>
                             
                             <div className="mt-12 pt-8 text-right shrink-0">
                                 <p className="text-sm opacity-60 mb-2 font-serif italic">Yours truly,</p>
                                 <p className={`text-3xl md:text-5xl ${theme.fontFamily} font-bold transform -rotate-2 inline-block`}>
-                                    {letter.senderName}
+                                    {data.senderName}
                                 </p>
                             </div>
 

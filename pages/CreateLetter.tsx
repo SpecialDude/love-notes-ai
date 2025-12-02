@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, Wand2, Copy, Check, Eye, Heart } from 'lucide-react';
+import { Sparkles, Wand2, Copy, Check, Eye, Heart, Loader2 } from 'lucide-react';
 import { ThemeType, RelationshipType, LetterData } from '../types';
 import { THEMES } from '../constants';
-import { encodeLetterData } from '../utils/encoding';
 import { generateOrEnhanceMessage, suggestTheme } from '../services/gemini';
+import { saveLetterToCloud } from '../services/firebase';
 import AnimatedBackground from '../components/AnimatedBackground';
 import confetti from 'canvas-confetti';
 
@@ -22,10 +22,10 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
   
   const [generatedLink, setGeneratedLink] = useState('');
   const [isThinking, setIsThinking] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [aiMode, setAiMode] = useState<'DRAFT' | 'POLISH'>((initialData?.content?.length || 0) > 50 ? 'POLISH' : 'DRAFT');
 
-  // Explicitly sync state if initialData changes (Fixes persistence issues)
   useEffect(() => {
     if (initialData) {
         setSenderName(initialData.senderName);
@@ -51,12 +51,8 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
     setIsThinking(true);
     const result = await generateOrEnhanceMessage(content, senderName || 'Me', recipientName || 'My Love', relationship, aiMode);
     
-    // Check if AI actually did anything (if not, it might be an API key issue)
     if (result === content && content.length > 0) {
        console.warn("AI returned identical content. Check API Key or Network.");
-    } else if (result === content && content.length === 0) {
-        // Empty draft returned empty
-        alert("Could not generate draft. Please check your API Key in the .env file.");
     }
 
     setContent(result);
@@ -89,7 +85,6 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
       const end = Date.now() + duration;
 
       (function frame() {
-        // Left Cannon
         confetti({
           particleCount: 5,
           angle: 60,
@@ -98,7 +93,6 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
           colors: ['#ff0000', '#ffa500', '#ffffff'],
         });
         
-        // Right Cannon
         confetti({
           particleCount: 5,
           angle: 120,
@@ -113,13 +107,22 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
       }());
   };
 
-  const handleGenerateLink = () => {
+  const handleGenerateLink = async () => {
     if (!content) return alert("Please write a message first!");
+    
+    setIsSaving(true);
     const data = getLetterData();
-    const encoded = encodeLetterData(data);
-    const url = `${window.location.origin}${window.location.pathname}#view?data=${encoded}`;
-    setGeneratedLink(url);
-    fireContinuousConfetti();
+    
+    // Save to Firestore
+    const id = await saveLetterToCloud(data);
+    setIsSaving(false);
+
+    if (id) {
+        // Create the clean short link
+        const url = `${window.location.origin}/?id=${id}`;
+        setGeneratedLink(url);
+        fireContinuousConfetti();
+    }
   };
 
   const copyToClipboard = () => {
@@ -139,15 +142,12 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
         animate={{ opacity: 1, y: 0 }}
         className="relative z-10 w-full max-w-3xl bg-black/10 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl overflow-hidden flex flex-col"
       >
-        {/* Header Section */}
         <div className="bg-white/10 p-6 md:p-8 border-b border-white/10">
             <h1 className="text-3xl font-cinematic text-white text-center tracking-widest mb-2 text-shadow-sm">LoveNotes</h1>
             <p className="text-white/60 text-center text-sm">Create a timeless memory</p>
         </div>
 
         <div className="p-6 md:p-8 space-y-6">
-            
-            {/* Top Inputs: To / From */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
                     <label className="text-xs font-bold text-white/70 uppercase tracking-wider ml-1">To</label>
@@ -169,7 +169,6 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
                 </div>
             </div>
 
-            {/* Relationship Pills */}
             <div className="space-y-2">
                 <label className="text-xs font-bold text-white/70 uppercase tracking-wider ml-1">Relationship</label>
                 <div className="flex flex-wrap gap-2">
@@ -191,7 +190,6 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
                 </div>
             </div>
 
-            {/* Editor Area */}
             <div className="space-y-2 relative">
                 <div className="flex justify-between items-end">
                     <label className="text-xs font-bold text-white/70 uppercase tracking-wider ml-1">Your Message</label>
@@ -220,7 +218,6 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
                 </div>
             </div>
 
-            {/* Theme Selector */}
             <div className="space-y-2">
                 <label className="text-xs font-bold text-white/70 uppercase tracking-wider ml-1">Select Theme</label>
                 <div className="grid grid-cols-4 sm:grid-cols-8 gap-3">
@@ -245,7 +242,6 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
                 </div>
             </div>
 
-            {/* Action Buttons */}
             <div className="pt-4 flex flex-col sm:flex-row gap-4">
                 {!generatedLink ? (
                     <>
@@ -257,10 +253,11 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
                         </button>
                         <button 
                             onClick={handleGenerateLink}
-                            className="flex-[2] py-3.5 rounded-xl font-bold text-black bg-white hover:bg-gray-100 shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all flex items-center justify-center gap-2 group"
+                            disabled={isSaving}
+                            className="flex-[2] py-3.5 rounded-xl font-bold text-black bg-white hover:bg-gray-100 shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            <Heart size={18} className="text-rose-500 fill-rose-500 group-hover:scale-125 transition-transform duration-300" /> 
-                            Generate Magic Link
+                            {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Heart size={18} className="text-rose-500 fill-rose-500 group-hover:scale-125 transition-transform duration-300" />}
+                            {isSaving ? 'Saving...' : 'Generate Magic Link'}
                         </button>
                     </>
                 ) : (
