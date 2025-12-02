@@ -14,16 +14,57 @@ interface Props {
   onBack?: () => void;
 }
 
+// Helper to safely get music URLs from environment variables
+const getEnvironmentMusic = (): string | null => {
+  let envVal = '';
+  
+  // 1. Vite Environment
+  // @ts-ignore
+  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_MUSIC_URLS) {
+    // @ts-ignore
+    envVal = import.meta.env.VITE_MUSIC_URLS;
+  } 
+  // 2. Create React App / Node Environment
+  else if (typeof process !== 'undefined' && process.env) {
+    envVal = process.env.REACT_APP_MUSIC_URLS || process.env.MUSIC_URLS || '';
+  }
+
+  if (envVal) {
+    const urls = envVal.split(',').map(u => u.trim()).filter(Boolean);
+    if (urls.length > 0) {
+      return urls[Math.floor(Math.random() * urls.length)];
+    }
+  }
+  return null;
+};
+
 const ViewLetter: React.FC<Props> = ({ dataString, previewData, onBack }) => {
   const [letter, setLetter] = useState<LetterData | null>(null);
   const [step, setStep] = useState<'CLOSED' | 'OPENING' | 'READING'>('CLOSED');
+  const [musicSrc, setMusicSrc] = useState<string>('');
 
   useEffect(() => {
+    let currentLetter: LetterData | null = null;
+    
     if (previewData) {
+        currentLetter = previewData;
         setLetter(previewData);
     } else if (dataString) {
       const decoded = decodeLetterData(dataString);
+      currentLetter = decoded;
       setLetter(decoded);
+    }
+
+    if (currentLetter) {
+        // Check for environment variable override first
+        const envMusic = getEnvironmentMusic();
+        if (envMusic) {
+            setMusicSrc(envMusic);
+        } else {
+            // Fallback to theme-based music
+            const theme = THEMES[currentLetter.theme || ThemeType.VELVET];
+            setMusicSrc(theme.musicUrl);
+        }
     }
   }, [dataString, previewData]);
 
@@ -86,7 +127,9 @@ const ViewLetter: React.FC<Props> = ({ dataString, previewData, onBack }) => {
   return (
     <div className={`min-h-screen relative overflow-hidden flex flex-col items-center justify-center ${theme.bgGradient}`}>
       <AnimatedBackground theme={letter.theme} />
-      <MusicPlayer src={theme.musicUrl} autoPlay={true} />
+      
+      {/* Play the selected music (env override or theme default) */}
+      {musicSrc && <MusicPlayer src={musicSrc} autoPlay={true} />}
 
       {onBack && (
         <button 
