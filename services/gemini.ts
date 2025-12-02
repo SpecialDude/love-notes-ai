@@ -1,7 +1,8 @@
 import { GoogleGenAI } from "@google/genai";
 import { ThemeType, RelationshipType } from '../types';
 
-const apiKey = process.env.API_KEY || '';
+// Safely access process.env to avoid crashes in browser environments without polyfills
+const apiKey = (typeof process !== 'undefined' && process.env?.API_KEY) || '';
 const ai = new GoogleGenAI({ apiKey });
 
 export const generateOrEnhanceMessage = async (
