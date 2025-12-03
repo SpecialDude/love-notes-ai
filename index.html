@@ -11,6 +11,14 @@
     <meta name="keywords" content="love letter, ai love note, romance, valentine, secret message, crush, relationship, anniversary" />
     <meta name="theme-color" content="#ec4899" />
 
+    <!-- PWA / Mobile Capable -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="LoveNotes" />
+    <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/192/love-letter.png" />
+
     <!-- Open Graph / Facebook / WhatsApp -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://lovenotes.ai/" />
@@ -91,6 +99,15 @@
 </head>
   <body>
     <div id="root"></div>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/service-worker.js')
+            .then(req => console.log('Service Worker registered!'))
+            .catch(err => console.log('Service Worker registration failed', err));
+        });
+      }
+    </script>
     <script type="module" src="/index.tsx"></script>
   </body>
 </html>

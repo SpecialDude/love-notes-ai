@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, Wand2, Copy, Check, Eye, Heart, Loader2, Globe, Lock } from 'lucide-react';
+import { Sparkles, Wand2, Copy, Check, Eye, Heart, Loader2, Globe, Lock, Download } from 'lucide-react';
 import { ThemeType, RelationshipType, LetterData } from '../types';
 import { THEMES } from '../constants';
 import { generateOrEnhanceMessage, suggestTheme } from '../services/gemini';
@@ -28,10 +29,21 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [aiMode, setAiMode] = useState<'DRAFT' | 'POLISH'>((initialData?.content?.length || 0) > 50 ? 'POLISH' : 'DRAFT');
+  
+  // PWA Install State
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
-  // Set Page Title
+  // Set Page Title and PWA Listener
   useEffect(() => {
     document.title = "Write a LoveNote ✒️ | Create Something Beautiful";
+    
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
   }, []);
 
   useEffect(() => {
@@ -60,11 +72,6 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
     setIsThinking(true);
     const result = await generateOrEnhanceMessage(content, senderName || 'Me', recipientName || 'My Love', relationship, aiMode);
     
-    if (result === content && content.length > 0) {
-       // Only warn if content didn't change (and wasn't empty)
-       // console.warn("AI returned identical content.");
-    }
-
     setContent(result);
     setAiMode('POLISH'); 
     
@@ -76,17 +83,24 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
     setIsThinking(false);
   };
 
+  const handleInstallClick = () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choiceResult: any) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('User accepted the install prompt');
+        }
+        setDeferredPrompt(null);
+      });
+    }
+  };
+
   const getLetterData = (): LetterData => {
-    // 1. Try to use existing music URL (if editing)
-    // 2. Try to get a new random music URL from Env
-    // 3. Explicitly default to NULL if neither exists (Firestore crashes on undefined)
     let music = initialData?.musicUrl;
     if (!music) {
         const randomMusic = getRandomMusicUrl();
         music = randomMusic || undefined;
     }
-    
-    // Explicitly nullify if undefined to satisfy Firestore
     const safeMusicUrl = music ?? null;
 
     return {
@@ -98,7 +112,7 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
         date: new Date().toISOString(),
         isPublic,
         views: 0,
-        musicUrl: safeMusicUrl as string | undefined // TS casting, but runtime value is null or string
+        musicUrl: safeMusicUrl as string | undefined
     };
   };
 
@@ -138,13 +152,10 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
     if (!content) return alert("Please write a message first!");
     
     setIsSaving(true);
-    // Force a fresh read of the data to ensure musicUrl is set
     const data = getLetterData();
     
     try {
-        // Save to Firestore
         const id = await saveLetterToCloud(data);
-        
         if (id) {
             const url = `${window.location.origin}/#/${id}`;
             setGeneratedLink(url);
@@ -152,7 +163,7 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
         }
     } catch (e) {
         console.error("Save failed", e);
-        setIsSaving(false); // Reset loading state on error
+        setIsSaving(false);
     } finally {
         setIsSaving(false);
     }
@@ -171,10 +182,19 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
       <AnimatedBackground theme={selectedTheme} />
       
       {/* Navigation to Feed */}
-      <div className="absolute top-4 right-4 z-50">
+      <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
+          {deferredPrompt && (
+              <button 
+                onClick={handleInstallClick}
+                className="flex items-center gap-2 px-3 py-2 bg-pink-500 hover:bg-pink-600 rounded-full text-white font-bold transition-all text-xs sm:text-sm shadow-lg animate-pulse"
+              >
+                  <Download size={14} className="sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Install App</span>
+              </button>
+          )}
+
           <a href="/#/feed" className="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full text-white font-bold transition-all text-xs sm:text-sm border border-white/20 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95">
               <Globe size={14} className="sm:w-4 sm:h-4" /> 
-              {/* Show 'Feed' on mobile so user knows it's a button, 'Community Feed' on Desktop */}
               <span className="inline sm:hidden">Feed</span>
               <span className="hidden sm:inline">Community Feed</span>
           </a>
