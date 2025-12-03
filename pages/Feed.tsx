@@ -3,6 +3,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { LetterData, ThemeType } from '../types';
 import { getPublicFeed, incrementViewCount } from '../services/firebase';
 import { THEMES } from '../constants';
+import { getRandomMusicUrl } from '../utils/music';
 import AnimatedBackground from '../components/AnimatedBackground';
 import MusicPlayer from '../components/MusicPlayer';
 import { ArrowLeft, Eye, Heart, Loader2, Share2, Check, ChevronDown, Copy } from 'lucide-react';
@@ -62,8 +63,12 @@ const Feed: React.FC = () => {
           const theme = THEMES[currentLetter.theme];
           setActiveTheme(currentLetter.theme);
           
-          // Use specific music if available, else theme default
-          setActiveMusic(currentLetter.musicUrl || theme.musicUrl);
+          // Music Priority: Saved URL -> Env Random -> Theme Default
+          let music = currentLetter.musicUrl;
+          if (!music) music = getRandomMusicUrl() || undefined;
+          if (!music) music = theme.musicUrl;
+          
+          if (music) setActiveMusic(music);
       }
   };
 
@@ -72,11 +77,16 @@ const Feed: React.FC = () => {
       const currentLetter = letters[activeIndex];
       if (!currentLetter || !currentLetter.id) return;
 
-      // Ensure music is set for the initial item load
-      const theme = THEMES[currentLetter.theme];
+      // Ensure music is set for the initial item load if it wasn't already
       if (activeMusic === '') {
+        const theme = THEMES[currentLetter.theme];
         setActiveTheme(currentLetter.theme);
-        setActiveMusic(currentLetter.musicUrl || theme.musicUrl);
+        
+        let music = currentLetter.musicUrl;
+        if (!music) music = getRandomMusicUrl() || undefined;
+        if (!music) music = theme.musicUrl;
+        
+        if (music) setActiveMusic(music);
       }
 
       // If already viewed in this session, don't count again

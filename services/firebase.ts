@@ -1,3 +1,4 @@
+
 import { initializeApp } from "firebase/app";
 import { 
   getFirestore, 
@@ -53,8 +54,14 @@ const db = getFirestore(app);
  */
 export const saveLetterToCloud = async (data: LetterData): Promise<string | null> => {
   try {
+    // Sanitize data: Firestore throws if a field is explicitly 'undefined'.
+    // We replace undefined with null.
+    const sanitizedData = Object.fromEntries(
+        Object.entries(data).map(([k, v]) => [k, v === undefined ? null : v])
+    );
+
     const docRef = await addDoc(collection(db, "letters"), {
-      ...data,
+      ...sanitizedData,
       views: 0, // Initialize views
       createdAt: new Date().toISOString() // Ensure server timestamp logic
     });
@@ -68,6 +75,8 @@ export const saveLetterToCloud = async (data: LetterData): Promise<string | null
         alert("Firebase Permission Error: Please go to Firebase Console > Firestore > Rules and change them to 'allow read, write: if true;'");
     } else if (e.code === 'unavailable') {
         alert("Firebase Network Error: Check your internet connection or Firewall.");
+    } else if (e.message.includes('undefined')) {
+        alert("Data Error: Attempted to save 'undefined' value. (This should be fixed now).");
     } else {
         alert(`Could not save letter. Error: ${e.message}`);
     }

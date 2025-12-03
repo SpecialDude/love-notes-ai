@@ -71,18 +71,31 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
     setIsThinking(false);
   };
 
-  const getLetterData = (): LetterData => ({
-    senderName,
-    recipientName,
-    relationship,
-    content,
-    theme: selectedTheme,
-    date: new Date().toISOString(),
-    isPublic,
-    views: 0,
-    // Use existing music URL if editing/previewing, otherwise pick a new random one
-    musicUrl: initialData?.musicUrl || getRandomMusicUrl() || undefined
-  });
+  const getLetterData = (): LetterData => {
+    // 1. Try to use existing music URL (if editing)
+    // 2. Try to get a new random music URL from Env
+    // 3. Explicitly default to NULL if neither exists (Firestore crashes on undefined)
+    let music = initialData?.musicUrl;
+    if (!music) {
+        const randomMusic = getRandomMusicUrl();
+        music = randomMusic || undefined;
+    }
+    
+    // Explicitly nullify if undefined to satisfy Firestore
+    const safeMusicUrl = music ?? null;
+
+    return {
+        senderName,
+        recipientName,
+        relationship,
+        content,
+        theme: selectedTheme,
+        date: new Date().toISOString(),
+        isPublic,
+        views: 0,
+        musicUrl: safeMusicUrl as string | undefined // TS casting, but runtime value is null or string
+    };
+  };
 
   const handlePreview = () => {
     if (!content) return alert("Please write a message first!");
@@ -120,6 +133,7 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
     if (!content) return alert("Please write a message first!");
     
     setIsSaving(true);
+    // Force a fresh read of the data to ensure musicUrl is set
     const data = getLetterData();
     
     try {

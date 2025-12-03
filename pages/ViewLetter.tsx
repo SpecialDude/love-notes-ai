@@ -5,6 +5,7 @@ import { ArrowLeft, Eye } from 'lucide-react';
 import { LetterData, ThemeType } from '../types';
 import { THEMES } from '../constants';
 import { incrementViewCount } from '../services/firebase';
+import { getRandomMusicUrl } from '../utils/music';
 import AnimatedBackground from '../components/AnimatedBackground';
 import MusicPlayer from '../components/MusicPlayer';
 import confetti from 'canvas-confetti';
@@ -21,14 +22,22 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
 
   useEffect(() => {
     if (data) {
-        // Prioritize specific music saved with the letter
-        if (data.musicUrl) {
-            setMusicSrc(data.musicUrl);
-        } else {
-             // Fallback for legacy notes or if no env var was set during creation
-            const theme = THEMES[data.theme || ThemeType.VELVET];
-            setMusicSrc(theme.musicUrl);
+        // MUSIC PRIORITY LOGIC:
+        // 1. Saved URL (specific to this note)
+        // 2. Random URL from Env Variables (fallback for legacy notes)
+        // 3. Theme Default (if env vars are empty)
+        let src = data.musicUrl;
+        
+        if (!src) {
+            src = getRandomMusicUrl() || undefined;
         }
+
+        if (!src) {
+            const theme = THEMES[data.theme || ThemeType.VELVET];
+            src = theme.musicUrl;
+        }
+
+        if (src) setMusicSrc(src);
 
         // Increment view count if this is a fresh view (has ID and no onBack aka not preview)
         if (data.id && !onBack) {
