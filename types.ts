@@ -1,3 +1,4 @@
+
 export enum ThemeType {
   VELVET = 'VELVET',      // Classic Romantic
   MIDNIGHT = 'MIDNIGHT',  // Cosmic/Deep
@@ -44,6 +45,7 @@ export interface LetterData {
   date: string;
   isPublic: boolean;
   views: number;
+  musicUrl?: string;
 }
 
 export interface GeminiResponse {

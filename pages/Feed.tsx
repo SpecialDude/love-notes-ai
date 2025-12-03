@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { LetterData, ThemeType } from '../types';
 import { getPublicFeed, incrementViewCount } from '../services/firebase';
@@ -60,7 +61,9 @@ const Feed: React.FC = () => {
           const currentLetter = letters[index];
           const theme = THEMES[currentLetter.theme];
           setActiveTheme(currentLetter.theme);
-          setActiveMusic(theme.musicUrl);
+          
+          // Use specific music if available, else theme default
+          setActiveMusic(currentLetter.musicUrl || theme.musicUrl);
       }
   };
 
@@ -68,6 +71,13 @@ const Feed: React.FC = () => {
   useEffect(() => {
       const currentLetter = letters[activeIndex];
       if (!currentLetter || !currentLetter.id) return;
+
+      // Ensure music is set for the initial item load
+      const theme = THEMES[currentLetter.theme];
+      if (activeMusic === '') {
+        setActiveTheme(currentLetter.theme);
+        setActiveMusic(currentLetter.musicUrl || theme.musicUrl);
+      }
 
       // If already viewed in this session, don't count again
       if (viewedIds.current.has(currentLetter.id)) return;

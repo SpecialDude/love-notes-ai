@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Eye } from 'lucide-react';
@@ -13,26 +14,6 @@ interface Props {
   onBack?: () => void;
 }
 
-// Helper to safely get music URLs from environment variables
-const getEnvironmentMusic = (): string | null => {
-  let envVal = '';
-  // @ts-ignore
-  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_MUSIC_URLS) {
-    // @ts-ignore
-    envVal = import.meta.env.VITE_MUSIC_URLS;
-  } else if (typeof process !== 'undefined' && process.env) {
-    envVal = process.env.REACT_APP_MUSIC_URLS || process.env.MUSIC_URLS || '';
-  }
-
-  if (envVal) {
-    const urls = envVal.split(',').map(u => u.trim()).filter(Boolean);
-    if (urls.length > 0) {
-      return urls[Math.floor(Math.random() * urls.length)];
-    }
-  }
-  return null;
-};
-
 const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
   const [step, setStep] = useState<'CLOSED' | 'OPENING' | 'READING'>('CLOSED');
   const [musicSrc, setMusicSrc] = useState<string>('');
@@ -40,10 +21,11 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
 
   useEffect(() => {
     if (data) {
-        const envMusic = getEnvironmentMusic();
-        if (envMusic) {
-            setMusicSrc(envMusic);
+        // Prioritize specific music saved with the letter
+        if (data.musicUrl) {
+            setMusicSrc(data.musicUrl);
         } else {
+             // Fallback for legacy notes or if no env var was set during creation
             const theme = THEMES[data.theme || ThemeType.VELVET];
             setMusicSrc(theme.musicUrl);
         }
@@ -113,7 +95,7 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
     <div className={`min-h-screen relative overflow-hidden flex flex-col items-center justify-center ${theme.bgGradient}`}>
       <AnimatedBackground theme={data.theme} />
       
-      {/* Play the selected music (env override or theme default) */}
+      {/* Play the selected music */}
       {musicSrc && <MusicPlayer src={musicSrc} autoPlay={true} />}
 
       {/* Navigation Buttons */}

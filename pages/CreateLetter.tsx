@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, Wand2, Copy, Check, Eye, Heart, Loader2, Globe, Lock } from 'lucide-react';
@@ -5,6 +6,7 @@ import { ThemeType, RelationshipType, LetterData } from '../types';
 import { THEMES } from '../constants';
 import { generateOrEnhanceMessage, suggestTheme } from '../services/gemini';
 import { saveLetterToCloud } from '../services/firebase';
+import { getRandomMusicUrl } from '../utils/music';
 import AnimatedBackground from '../components/AnimatedBackground';
 import confetti from 'canvas-confetti';
 
@@ -77,7 +79,9 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
     theme: selectedTheme,
     date: new Date().toISOString(),
     isPublic,
-    views: 0
+    views: 0,
+    // Use existing music URL if editing/previewing, otherwise pick a new random one
+    musicUrl: initialData?.musicUrl || getRandomMusicUrl() || undefined
   });
 
   const handlePreview = () => {
