@@ -4,7 +4,7 @@ import { getPublicFeed, incrementViewCount } from '../services/firebase';
 import { THEMES } from '../constants';
 import AnimatedBackground from '../components/AnimatedBackground';
 import MusicPlayer from '../components/MusicPlayer';
-import { ArrowLeft, Eye, Heart, Loader2, Share2, Check } from 'lucide-react';
+import { ArrowLeft, Eye, Heart, Loader2, Share2, Check, ChevronDown, Copy } from 'lucide-react';
 import { DocumentSnapshot } from 'firebase/firestore';
 
 const Feed: React.FC = () => {
@@ -97,7 +97,7 @@ const Feed: React.FC = () => {
   return (
     <div className="relative h-screen w-full overflow-hidden bg-black text-white">
         
-        {/* Dynamic Background that changes based on active scroll item */}
+        {/* Dynamic Background */}
         <div className={`absolute inset-0 transition-colors duration-1000 ${THEMES[activeTheme].bgGradient}`}>
             <AnimatedBackground theme={activeTheme} />
         </div>
@@ -105,14 +105,22 @@ const Feed: React.FC = () => {
         {/* Dynamic Music */}
         {activeMusic && <MusicPlayer src={activeMusic} autoPlay={true} />}
 
-        {/* Back Button */}
-        <div className="fixed top-4 left-4 z-50">
-            <a href="/" className="flex items-center gap-2 px-4 py-2 bg-black/20 backdrop-blur-md border border-white/20 rounded-full text-white font-bold text-sm hover:bg-black/40 transition-all">
-                <ArrowLeft size={16} /> Create
+        {/* Header / Nav */}
+        <div className="fixed top-0 left-0 w-full z-50 p-4 flex justify-between items-start pointer-events-none">
+            <a href="/" className="pointer-events-auto flex items-center gap-2 px-4 py-2 bg-black/20 backdrop-blur-md border border-white/20 rounded-full text-white font-bold text-xs uppercase tracking-wide hover:bg-black/40 transition-all shadow-lg hover:scale-105">
+                <ArrowLeft size={14} /> Create Note
             </a>
         </div>
 
-        {/* Infinite Scroll Container */}
+        {/* Scroll Hint */}
+        {letters.length > 0 && (
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex flex-col items-center gap-1 opacity-60 animate-bounce pointer-events-none">
+                <span className="text-[10px] uppercase tracking-widest text-white font-medium">Scroll</span>
+                <ChevronDown size={20} className="text-white" />
+            </div>
+        )}
+
+        {/* Feed Container */}
         <div 
             className="h-full w-full overflow-y-scroll snap-y snap-mandatory scroll-smooth relative z-10 no-scrollbar"
             onScroll={handleScroll}
@@ -120,80 +128,120 @@ const Feed: React.FC = () => {
             {letters.map((letter, index) => {
                 const theme = THEMES[letter.theme];
                 const isLast = index === letters.length - 1;
+                const isActive = index === activeIndex;
                 
                 return (
                     <div 
                         key={letter.id || index} 
                         ref={isLast ? lastElementRef : null}
-                        className="h-screen w-full snap-start snap-always flex items-center justify-center p-4"
+                        className="h-screen w-full snap-start snap-always flex items-center justify-center p-4 md:p-6 relative"
                     >
-                        {/* Feed Card */}
-                        <div className={`
-                            relative w-full max-w-xl max-h-[80vh] overflow-y-auto custom-scrollbar
-                            ${theme.paperColor} ${theme.textColor} ${theme.fontFamily}
-                            rounded-xl shadow-2xl p-8 md:p-12
-                            paper-texture flex flex-col
-                            transition-transform duration-500
-                            ${index === activeIndex ? 'scale-100 opacity-100' : 'scale-95 opacity-50 blur-[2px]'}
-                        `}>
-                            {/* Header */}
-                            <div className="flex justify-between items-center mb-6 opacity-60 border-b border-current pb-2 shrink-0">
-                                <span className="text-xs uppercase tracking-widest">
-                                    {new Date(letter.date).toLocaleDateString()}
-                                </span>
-                                <div className="flex items-center gap-3">
-                                    <div className="flex items-center gap-1 text-xs font-bold" title="Views">
-                                        <Eye size={14} /> {letter.views || 0}
+                         <div className="relative w-full max-w-4xl flex items-center justify-center">
+                            
+                            {/* LEFT: The Letter Card */}
+                            <div className={`
+                                relative w-full max-w-xl max-h-[70vh] 
+                                flex flex-col
+                                ${theme.paperColor} ${theme.textColor} ${theme.fontFamily}
+                                rounded-sm shadow-[0_10px_40px_rgba(0,0,0,0.3)] 
+                                paper-texture
+                                transition-all duration-700
+                                ${isActive ? 'scale-100 opacity-100 translate-y-0' : 'scale-90 opacity-40 translate-y-10'}
+                            `}>
+                                {/* Postage Stamp Decoration */}
+                                <div className="absolute -top-3 -right-3 w-16 h-20 bg-white border-4 border-double border-gray-300 shadow-md transform rotate-6 z-20 flex items-center justify-center overflow-hidden">
+                                    <div className="w-[90%] h-[90%] border border-dashed border-gray-400 opacity-50 bg-gray-100 flex items-center justify-center">
+                                        <Heart size={20} className="text-red-300 fill-red-100" />
                                     </div>
-                                    {letter.id && (
-                                        <button 
-                                            onClick={() => handleShare(letter.id!)}
-                                            className="hover:text-current/80 transition-colors"
-                                            title="Copy Link"
-                                        >
-                                            {copiedId === letter.id ? <Check size={14} /> : <Share2 size={14} />}
-                                        </button>
-                                    )}
                                 </div>
-                            </div>
 
-                            {/* Content */}
-                            <div className="flex-1 flex flex-col justify-center min-h-[200px]">
-                                <h2 className="text-3xl font-bold mb-6">Dear {letter.recipientName},</h2>
-                                <p className="text-xl md:text-2xl leading-relaxed whitespace-pre-wrap opacity-90">
-                                    {letter.content}
-                                </p>
-                                <div className="mt-8 text-right">
-                                    <p className="text-sm opacity-60 italic mb-1">Love,</p>
-                                    <p className="text-2xl font-bold transform -rotate-2 inline-block">
-                                        {letter.senderName}
+                                {/* Scrollable Content Area */}
+                                {/* Added pr-16 for mobile to ensure text doesn't go under buttons */}
+                                <div className="flex-1 overflow-y-auto custom-scrollbar pl-8 py-8 pr-16 md:p-12 md:pr-12">
+                                    {/* Date */}
+                                    <div className="mb-6 opacity-60 text-xs font-serif uppercase tracking-widest border-b border-current pb-2 w-fit">
+                                        {new Date(letter.date).toLocaleDateString()}
+                                    </div>
+
+                                    <h2 className="text-3xl font-bold mb-6">Dear {letter.recipientName},</h2>
+                                    
+                                    <p className="text-xl md:text-2xl leading-relaxed whitespace-pre-wrap opacity-95">
+                                        {letter.content}
                                     </p>
+
+                                    <div className="mt-12 text-right">
+                                        <p className="text-sm opacity-60 italic mb-2">Yours truly,</p>
+                                        <p className="text-2xl font-bold transform -rotate-2 inline-block">
+                                            {letter.senderName}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Footer Interaction */}
-                            <div className="mt-8 pt-6 border-t border-current/10 flex justify-center opacity-70 shrink-0">
-                                <div className="flex gap-2 items-center text-xs uppercase tracking-widest">
-                                    <Heart size={14} className="fill-current" />
-                                    <span>{letter.relationship}</span>
+                            {/* RIGHT: Sidebar Actions (TikTok Style) */}
+                            <div className={`
+                                absolute right-2 bottom-24 md:right-[-60px] md:bottom-auto 
+                                flex flex-col gap-6 z-30
+                                transition-all duration-500 delay-300
+                                ${isActive ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-10'}
+                            `}>
+                                {/* Views */}
+                                <div className="flex flex-col items-center gap-1 group">
+                                    <div className="w-12 h-12 flex items-center justify-center bg-black/20 backdrop-blur-md rounded-full text-white border border-white/20 shadow-lg group-hover:bg-black/40 transition-colors">
+                                        <Eye size={20} />
+                                    </div>
+                                    <span className="text-[10px] font-bold text-white drop-shadow-md bg-black/20 px-2 py-0.5 rounded-full">
+                                        {letter.views || 0}
+                                    </span>
+                                </div>
+
+                                {/* Share */}
+                                {letter.id && (
+                                    <button 
+                                        onClick={() => handleShare(letter.id!)}
+                                        className="flex flex-col items-center gap-1 group active:scale-90 transition-transform"
+                                    >
+                                        <div className={`w-12 h-12 flex items-center justify-center backdrop-blur-md rounded-full border shadow-lg transition-colors ${copiedId === letter.id ? 'bg-green-500 border-green-400 text-white' : 'bg-black/20 border-white/20 text-white hover:bg-white/20'}`}>
+                                            {copiedId === letter.id ? <Check size={20} /> : <Share2 size={20} />}
+                                        </div>
+                                        <span className="text-[10px] font-bold text-white drop-shadow-md bg-black/20 px-2 py-0.5 rounded-full">
+                                            {copiedId === letter.id ? 'Copied' : 'Share'}
+                                        </span>
+                                    </button>
+                                )}
+
+                                {/* Relationship Tag */}
+                                <div className="flex flex-col items-center gap-1">
+                                    <div className="w-12 h-12 flex items-center justify-center bg-pink-500/20 backdrop-blur-md rounded-full text-pink-200 border border-pink-500/30 shadow-lg">
+                                        <Heart size={20} className="fill-pink-500/50" />
+                                    </div>
+                                    <span className="text-[10px] font-bold text-white drop-shadow-md uppercase tracking-wider bg-black/20 px-2 py-0.5 rounded-full max-w-[70px] truncate text-center">
+                                        {letter.relationship}
+                                    </span>
                                 </div>
                             </div>
+
                         </div>
                     </div>
                 );
             })}
 
             {loading && (
-                <div className="h-20 w-full flex items-center justify-center snap-center">
-                    <Loader2 className="animate-spin text-white" size={32} />
+                <div className="h-40 w-full flex items-center justify-center snap-center">
+                    <div className="flex flex-col items-center gap-2">
+                         <Loader2 className="animate-spin text-white" size={32} />
+                         <span className="text-white/50 text-xs uppercase tracking-widest">Loading more notes...</span>
+                    </div>
                 </div>
             )}
             
             {!loading && letters.length === 0 && (
-                 <div className="h-screen flex items-center justify-center flex-col text-white/70">
+                 <div className="h-screen flex items-center justify-center flex-col text-white/70 p-8 text-center">
+                     <Heart size={48} className="text-white/20 mb-4" />
                      <p className="text-xl mb-4 font-serif">No public notes found yet.</p>
-                     <a href="/" className="px-6 py-2 bg-white text-black rounded-full font-bold hover:bg-white/90 transition-all">
-                         Be the first to write one
+                     <p className="text-sm opacity-50 mb-8 max-w-md">Be the first to share your love with the world. Your note will appear here for everyone to see.</p>
+                     <a href="/" className="px-8 py-3 bg-white text-black rounded-full font-bold hover:bg-gray-200 transition-all shadow-lg hover:shadow-xl hover:scale-105">
+                         Write a Note
                      </a>
                  </div>
             )}

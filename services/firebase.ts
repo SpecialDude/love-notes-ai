@@ -146,9 +146,11 @@ export const getPublicFeed = async (lastDoc?: DocumentSnapshot) => {
     };
   } catch (e: any) {
     console.error("Error fetching feed:", e);
-    // Help user identify index issue
+    // Help user identify index issue immediately
     if (e.code === 'failed-precondition' && e.message.includes('index')) {
-        console.error("🚨 MISSING INDEX: Open the link in the error above to auto-create it in Firebase Console!");
+        const msg = "🚨 MISSING FIREBASE INDEX: Open the link in the browser console (F12) to auto-create it in Firebase Console!";
+        console.error(msg);
+        alert(msg);
     }
     return { letters: [], lastDoc: undefined };
   }
