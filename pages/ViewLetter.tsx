@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Eye } from 'lucide-react';
@@ -19,6 +18,15 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
   const [step, setStep] = useState<'CLOSED' | 'OPENING' | 'READING'>('CLOSED');
   const [musicSrc, setMusicSrc] = useState<string>('');
   const [viewCount, setViewCount] = useState(data.views || 0);
+
+  // SEO: Update Title when data loads
+  useEffect(() => {
+    if (data?.recipientName) {
+      document.title = `💌 For ${data.recipientName} | LoveNotes`;
+    } else {
+      document.title = "You have a new message 💌";
+    }
+  }, [data]);
 
   useEffect(() => {
     if (data) {

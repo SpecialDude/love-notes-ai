@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, Wand2, Copy, Check, Eye, Heart, Loader2, Globe, Lock } from 'lucide-react';
@@ -29,6 +28,11 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [aiMode, setAiMode] = useState<'DRAFT' | 'POLISH'>((initialData?.content?.length || 0) > 50 ? 'POLISH' : 'DRAFT');
+
+  // Set Page Title
+  useEffect(() => {
+    document.title = "Write a LoveNote ✒️ | Create Something Beautiful";
+  }, []);
 
   useEffect(() => {
     if (initialData) {

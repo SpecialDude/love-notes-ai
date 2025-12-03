@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { LetterData, ThemeType } from '../types';
 import { getPublicFeed, incrementViewCount } from '../services/firebase';
@@ -22,6 +21,11 @@ const Feed: React.FC = () => {
   // Track viewed IDs to prevent double counting in same session
   const viewedIds = useRef<Set<string>>(new Set());
   
+  // Set Title
+  useEffect(() => {
+    document.title = "💖 Community Feed | LoveNotes";
+  }, []);
+
   const observer = useRef<IntersectionObserver | null>(null);
   const lastElementRef = useCallback((node: HTMLDivElement) => {
     if (loading) return;
