@@ -129,6 +129,7 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
         }
     } catch (e) {
         console.error("Save failed", e);
+        setIsSaving(false); // Reset loading state on error
     } finally {
         setIsSaving(false);
     }
@@ -143,13 +144,16 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
   const currentTheme = THEMES[selectedTheme];
 
   return (
-    <div className={`min-h-screen relative flex items-center justify-center p-4 transition-colors duration-700 ${currentTheme.bgGradient}`}>
+    <div className={`min-h-screen relative flex items-center justify-center p-4 pt-20 sm:p-4 transition-colors duration-700 ${currentTheme.bgGradient}`}>
       <AnimatedBackground theme={selectedTheme} />
       
       {/* Navigation to Feed */}
       <div className="absolute top-4 right-4 z-50">
-          <a href="/#/feed" className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full text-white font-bold transition-all text-sm border border-white/20">
-              <Globe size={16} /> Community Feed
+          <a href="/#/feed" className="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full text-white font-bold transition-all text-xs sm:text-sm border border-white/20 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95">
+              <Globe size={14} className="sm:w-4 sm:h-4" /> 
+              {/* Show 'Feed' on mobile so user knows it's a button, 'Community Feed' on Desktop */}
+              <span className="inline sm:hidden">Feed</span>
+              <span className="hidden sm:inline">Community Feed</span>
           </a>
       </div>
       
