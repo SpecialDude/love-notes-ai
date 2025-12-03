@@ -12,15 +12,26 @@ const App: React.FC = () => {
   const [viewData, setViewData] = useState<LetterData | null>(null);
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [isFeed, setIsFeed] = useState(false);
+  const [currentHash, setCurrentHash] = useState(window.location.hash);
 
+  // Listen for hash changes to handle navigation (e.g., clicking Feed button)
   useEffect(() => {
-    const init = async () => {
-      const hash = window.location.hash;
+    const handleHashChange = () => {
+      setCurrentHash(window.location.hash);
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  // Router Logic
+  useEffect(() => {
+    const handleRoute = async () => {
+      setIsLoading(true);
+      const hash = currentHash;
       
       // 1. Feed Route
       if (hash === '#/feed') {
-          setIsFeed(true);
+          setViewData(null); // Clear any view data
           setIsLoading(false);
           return;
       }
@@ -29,36 +40,34 @@ const App: React.FC = () => {
       if (hash.startsWith('#/') && hash.length > 3) {
         const id = hash.substring(2); // Remove #/
         if (id) {
-           setIsLoading(true);
            const cloudData = await getLetterFromCloud(id);
            if (cloudData) {
                setViewData(cloudData);
            } else {
                console.warn("Letter not found for ID:", id);
+               // Optionally handle 404 state here
            }
-           setIsLoading(false);
-           return;
         }
-      }
-
+      } 
       // 3. Legacy Hash Support (#view?data=...) - Backward compatibility
-      if (hash.startsWith('#view')) {
+      else if (hash.startsWith('#view')) {
         const hashParams = new URLSearchParams(hash.split('?')[1]);
         const dataString = hashParams.get('data');
         if (dataString) {
           const decoded = decodeLetterData(dataString);
           setViewData(decoded);
         }
-        setIsLoading(false);
-        return;
+      } 
+      else {
+        // Home/Create Route
+        setViewData(null);
       }
-
-      // Default: Creator Mode (Home)
+      
       setIsLoading(false);
     };
 
-    init();
-  }, []);
+    handleRoute();
+  }, [currentHash]);
 
   const handlePreview = (data: LetterData) => {
     setDraftData(data);
@@ -79,7 +88,7 @@ const App: React.FC = () => {
   }
 
   // 1. Public Feed
-  if (isFeed) {
+  if (currentHash === '#/feed') {
       return <Feed />;
   }
 

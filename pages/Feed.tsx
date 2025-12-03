@@ -4,7 +4,7 @@ import { getPublicFeed, incrementViewCount } from '../services/firebase';
 import { THEMES } from '../constants';
 import AnimatedBackground from '../components/AnimatedBackground';
 import MusicPlayer from '../components/MusicPlayer';
-import { ArrowLeft, Eye, Heart, Loader2 } from 'lucide-react';
+import { ArrowLeft, Eye, Heart, Loader2, Share2, Check } from 'lucide-react';
 import { DocumentSnapshot } from 'firebase/firestore';
 
 const Feed: React.FC = () => {
@@ -14,6 +14,10 @@ const Feed: React.FC = () => {
   const [activeTheme, setActiveTheme] = useState<ThemeType>(ThemeType.VELVET);
   const [activeMusic, setActiveMusic] = useState<string>('');
   const [activeIndex, setActiveIndex] = useState<number>(0);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  
+  // Track viewed IDs to prevent double counting in same session
+  const viewedIds = useRef<Set<string>>(new Set());
   
   const observer = useRef<IntersectionObserver | null>(null);
   const lastElementRef = useCallback((node: HTMLDivElement) => {
@@ -31,8 +35,14 @@ const Feed: React.FC = () => {
   const loadMore = async () => {
     setLoading(true);
     const result = await getPublicFeed(lastDoc);
-    setLetters(prev => [...prev, ...result.letters]);
-    setLastDoc(result.lastDoc);
+    if (result.letters.length > 0) {
+        setLetters(prev => {
+            // Filter duplicates just in case
+            const newLetters = result.letters.filter(n => !prev.find(p => p.id === n.id));
+            return [...prev, ...newLetters];
+        });
+        setLastDoc(result.lastDoc);
+    }
     setLoading(false);
   };
 
@@ -59,14 +69,30 @@ const Feed: React.FC = () => {
       const currentLetter = letters[activeIndex];
       if (!currentLetter || !currentLetter.id) return;
 
+      // If already viewed in this session, don't count again
+      if (viewedIds.current.has(currentLetter.id)) return;
+
       const timer = setTimeout(() => {
-          incrementViewCount(currentLetter.id!);
-          // Optimistically update view count in UI
-          setLetters(prev => prev.map((l, i) => i === activeIndex ? { ...l, views: (l.views || 0) + 1 } : l));
+          if (currentLetter.id) {
+            incrementViewCount(currentLetter.id);
+            viewedIds.current.add(currentLetter.id);
+            
+            // Optimistically update view count in UI without triggering re-render loop
+            setLetters(prev => prev.map((l, i) => 
+                i === activeIndex ? { ...l, views: (l.views || 0) + 1 } : l
+            ));
+          }
       }, 2000);
 
       return () => clearTimeout(timer);
   }, [activeIndex, letters]);
+
+  const handleShare = (id: string) => {
+      const url = `${window.location.origin}/#/${id}`;
+      navigator.clipboard.writeText(url);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+  };
 
   return (
     <div className="relative h-screen w-full overflow-hidden bg-black text-white">
@@ -82,7 +108,7 @@ const Feed: React.FC = () => {
         {/* Back Button */}
         <div className="fixed top-4 left-4 z-50">
             <a href="/" className="flex items-center gap-2 px-4 py-2 bg-black/20 backdrop-blur-md border border-white/20 rounded-full text-white font-bold text-sm hover:bg-black/40 transition-all">
-                <ArrowLeft size={16} /> Home
+                <ArrowLeft size={16} /> Create
             </a>
         </div>
 
@@ -107,19 +133,32 @@ const Feed: React.FC = () => {
                             ${theme.paperColor} ${theme.textColor} ${theme.fontFamily}
                             rounded-xl shadow-2xl p-8 md:p-12
                             paper-texture flex flex-col
+                            transition-transform duration-500
+                            ${index === activeIndex ? 'scale-100 opacity-100' : 'scale-95 opacity-50 blur-[2px]'}
                         `}>
                             {/* Header */}
-                            <div className="flex justify-between items-center mb-6 opacity-60 border-b border-current pb-2">
+                            <div className="flex justify-between items-center mb-6 opacity-60 border-b border-current pb-2 shrink-0">
                                 <span className="text-xs uppercase tracking-widest">
                                     {new Date(letter.date).toLocaleDateString()}
                                 </span>
-                                <div className="flex items-center gap-1 text-xs font-bold">
-                                    <Eye size={14} /> {letter.views || 0}
+                                <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-1 text-xs font-bold" title="Views">
+                                        <Eye size={14} /> {letter.views || 0}
+                                    </div>
+                                    {letter.id && (
+                                        <button 
+                                            onClick={() => handleShare(letter.id!)}
+                                            className="hover:text-current/80 transition-colors"
+                                            title="Copy Link"
+                                        >
+                                            {copiedId === letter.id ? <Check size={14} /> : <Share2 size={14} />}
+                                        </button>
+                                    )}
                                 </div>
                             </div>
 
                             {/* Content */}
-                            <div className="flex-1 flex flex-col justify-center min-h-[300px]">
+                            <div className="flex-1 flex flex-col justify-center min-h-[200px]">
                                 <h2 className="text-3xl font-bold mb-6">Dear {letter.recipientName},</h2>
                                 <p className="text-xl md:text-2xl leading-relaxed whitespace-pre-wrap opacity-90">
                                     {letter.content}
@@ -133,7 +172,7 @@ const Feed: React.FC = () => {
                             </div>
 
                             {/* Footer Interaction */}
-                            <div className="mt-8 pt-6 border-t border-current/10 flex justify-center opacity-70">
+                            <div className="mt-8 pt-6 border-t border-current/10 flex justify-center opacity-70 shrink-0">
                                 <div className="flex gap-2 items-center text-xs uppercase tracking-widest">
                                     <Heart size={14} className="fill-current" />
                                     <span>{letter.relationship}</span>
@@ -145,15 +184,17 @@ const Feed: React.FC = () => {
             })}
 
             {loading && (
-                <div className="h-20 w-full flex items-center justify-center">
-                    <Loader2 className="animate-spin text-white" />
+                <div className="h-20 w-full flex items-center justify-center snap-center">
+                    <Loader2 className="animate-spin text-white" size={32} />
                 </div>
             )}
             
             {!loading && letters.length === 0 && (
                  <div className="h-screen flex items-center justify-center flex-col text-white/70">
-                     <p>No public notes yet.</p>
-                     <a href="/" className="mt-4 underline">Be the first to write one!</a>
+                     <p className="text-xl mb-4 font-serif">No public notes found yet.</p>
+                     <a href="/" className="px-6 py-2 bg-white text-black rounded-full font-bold hover:bg-white/90 transition-all">
+                         Be the first to write one
+                     </a>
                  </div>
             )}
         </div>

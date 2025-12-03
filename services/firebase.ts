@@ -115,6 +115,8 @@ export const incrementViewCount = async (id: string) => {
  */
 export const getPublicFeed = async (lastDoc?: DocumentSnapshot) => {
   try {
+    // NOTE: This query requires a Firestore Index (isPublic ASC, createdAt DESC)
+    // If you see an error in console with a link, CLICK THE LINK to build the index.
     let q = query(
       collection(db, "letters"),
       where("isPublic", "==", true),
@@ -142,8 +144,12 @@ export const getPublicFeed = async (lastDoc?: DocumentSnapshot) => {
       letters, 
       lastDoc: snapshot.docs[snapshot.docs.length - 1] 
     };
-  } catch (e) {
+  } catch (e: any) {
     console.error("Error fetching feed:", e);
+    // Help user identify index issue
+    if (e.code === 'failed-precondition' && e.message.includes('index')) {
+        console.error("🚨 MISSING INDEX: Open the link in the error above to auto-create it in Firebase Console!");
+    }
     return { letters: [], lastDoc: undefined };
   }
 };
