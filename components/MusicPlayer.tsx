@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
 
@@ -16,6 +17,7 @@ const MusicPlayer: React.FC<Props> = ({ src, autoPlay }) => {
   useEffect(() => {
     // Reset error state when src changes
     setHasError(false);
+    // console.log("MusicPlayer attempting to load:", src);
     
     if (audioRef.current) {
         audioRef.current.volume = 0.5;
@@ -26,7 +28,7 @@ const MusicPlayer: React.FC<Props> = ({ src, autoPlay }) => {
                 playPromise
                   .then(() => setIsPlaying(true))
                   .catch(error => {
-                      console.log("Autoplay prevented or failed:", error);
+                      // Autoplay often fails without interaction, this is normal
                       setIsPlaying(false);
                   });
              }
@@ -72,8 +74,9 @@ const MusicPlayer: React.FC<Props> = ({ src, autoPlay }) => {
       setIsMuted(!isMuted);
   }
 
-  const handleError = () => {
-    console.warn(`MusicPlayer: Could not load audio source: ${src}`);
+  const handleError = (e: React.SyntheticEvent<HTMLAudioElement, Event>) => {
+    const target = e.target as HTMLAudioElement;
+    console.warn(`MusicPlayer Error (${target.error?.code}): Could not load ${src}. Error message: ${target.error?.message}`);
     setHasError(true);
     setIsPlaying(false);
   };
@@ -88,6 +91,7 @@ const MusicPlayer: React.FC<Props> = ({ src, autoPlay }) => {
         loop 
         preload="auto" 
         onError={handleError}
+        // Removed crossOrigin to allow playing from standard public URLs without strict CORS headers
       />
       
       <button 
