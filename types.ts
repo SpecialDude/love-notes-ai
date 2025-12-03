@@ -35,13 +35,15 @@ export interface ThemeConfig {
 }
 
 export interface LetterData {
+  id?: string;
   senderName: string;
   recipientName: string;
   relationship: RelationshipType;
   content: string;
   theme: ThemeType;
   date: string;
-  id?: string;
+  isPublic: boolean;
+  views: number;
 }
 
 export interface GeminiResponse {

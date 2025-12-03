@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Eye } from 'lucide-react';
 import { LetterData, ThemeType } from '../types';
 import { THEMES } from '../constants';
+import { incrementViewCount } from '../services/firebase';
 import AnimatedBackground from '../components/AnimatedBackground';
 import MusicPlayer from '../components/MusicPlayer';
 import confetti from 'canvas-confetti';
@@ -35,20 +36,26 @@ const getEnvironmentMusic = (): string | null => {
 const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
   const [step, setStep] = useState<'CLOSED' | 'OPENING' | 'READING'>('CLOSED');
   const [musicSrc, setMusicSrc] = useState<string>('');
+  const [viewCount, setViewCount] = useState(data.views || 0);
 
   useEffect(() => {
     if (data) {
-        // Check for environment variable override first
         const envMusic = getEnvironmentMusic();
         if (envMusic) {
             setMusicSrc(envMusic);
         } else {
-            // Fallback to theme-based music
             const theme = THEMES[data.theme || ThemeType.VELVET];
             setMusicSrc(theme.musicUrl);
         }
+
+        // Increment view count if this is a fresh view (has ID and no onBack aka not preview)
+        if (data.id && !onBack) {
+            incrementViewCount(data.id);
+            // Optimistically increment local state
+            setViewCount((v) => v + 1);
+        }
     }
-  }, [data]);
+  }, [data, onBack]);
 
   const handleOpen = () => {
     setStep('OPENING');
@@ -109,13 +116,30 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
       {/* Play the selected music (env override or theme default) */}
       {musicSrc && <MusicPlayer src={musicSrc} autoPlay={true} />}
 
-      {onBack && (
-        <button 
-            onClick={onBack}
-            className="fixed top-6 left-6 z-50 flex items-center gap-2 px-4 py-2 bg-black/20 backdrop-blur-md border border-white/20 rounded-full shadow-lg text-white font-bold hover:bg-black/40 transition-all"
-        >
-            <ArrowLeft size={18} /> Back to Editor
-        </button>
+      {/* Navigation Buttons */}
+      <div className="fixed top-6 left-6 z-50 flex gap-2">
+          {onBack ? (
+            <button 
+                onClick={onBack}
+                className="flex items-center gap-2 px-4 py-2 bg-black/20 backdrop-blur-md border border-white/20 rounded-full shadow-lg text-white font-bold hover:bg-black/40 transition-all"
+            >
+                <ArrowLeft size={18} /> Back to Editor
+            </button>
+          ) : (
+            <a 
+                href="/"
+                className="flex items-center gap-2 px-4 py-2 bg-black/20 backdrop-blur-md border border-white/20 rounded-full shadow-lg text-white font-bold hover:bg-black/40 transition-all text-xs uppercase tracking-wide"
+            >
+                <ArrowLeft size={16} /> Create
+            </a>
+          )}
+      </div>
+
+      {/* View Counter Display */}
+      {step === 'READING' && (
+          <div className="fixed top-6 right-6 z-50 flex items-center gap-2 px-3 py-1 bg-black/20 backdrop-blur-sm rounded-full text-white/70 text-xs">
+              <Eye size={14} /> {viewCount}
+          </div>
       )}
 
       {/* 3D Scene Container */}

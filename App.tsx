@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import CreateLetter from './pages/CreateLetter';
 import ViewLetter from './pages/ViewLetter';
+import Feed from './pages/Feed';
 import { LetterData } from './types';
 import { decodeLetterData } from './utils/encoding';
 import { getLetterFromCloud } from './services/firebase';
@@ -11,13 +12,20 @@ const App: React.FC = () => {
   const [viewData, setViewData] = useState<LetterData | null>(null);
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isFeed, setIsFeed] = useState(false);
 
   useEffect(() => {
     const init = async () => {
-      // 1. Hash Routing Support (/#/ID) - The Preferred, Robust Strategy
       const hash = window.location.hash;
       
-      // If hash looks like #/abc12345 (Firestore ID)
+      // 1. Feed Route
+      if (hash === '#/feed') {
+          setIsFeed(true);
+          setIsLoading(false);
+          return;
+      }
+
+      // 2. Hash Routing Support (/#/ID) - The Preferred, Robust Strategy
       if (hash.startsWith('#/') && hash.length > 3) {
         const id = hash.substring(2); // Remove #/
         if (id) {
@@ -33,7 +41,7 @@ const App: React.FC = () => {
         }
       }
 
-      // 2. Legacy Hash Support (#view?data=...) - Backward compatibility
+      // 3. Legacy Hash Support (#view?data=...) - Backward compatibility
       if (hash.startsWith('#view')) {
         const hashParams = new URLSearchParams(hash.split('?')[1]);
         const dataString = hashParams.get('data');
@@ -43,19 +51,6 @@ const App: React.FC = () => {
         }
         setIsLoading(false);
         return;
-      }
-
-      // 3. Fallback: Check Path (for local dev with rewrites active)
-      // Only if no hash is present
-      const pathId = window.location.pathname.substring(1);
-      if (pathId && pathId.length > 5 && !pathId.includes('.') && pathId !== 'index.html' && !hash) {
-        // Attempt to load from path, but this often fails on static hosts (404)
-        const cloudData = await getLetterFromCloud(pathId);
-        if (cloudData) {
-          setViewData(cloudData);
-          setIsLoading(false);
-          return;
-        }
       }
 
       // Default: Creator Mode (Home)
@@ -83,12 +78,17 @@ const App: React.FC = () => {
     );
   }
 
-  // 1. Viewing a fetched letter (from Cloud or Link)
+  // 1. Public Feed
+  if (isFeed) {
+      return <Feed />;
+  }
+
+  // 2. Viewing a fetched letter (from Cloud or Link)
   if (viewData) {
     return <ViewLetter data={viewData} />;
   }
 
-  // 2. Previewing a local draft
+  // 3. Previewing a local draft
   if (isPreviewing && draftData) {
       return (
           <ViewLetter 
@@ -98,7 +98,7 @@ const App: React.FC = () => {
       );
   }
 
-  // 3. Creating a new letter
+  // 4. Creating a new letter
   return (
     <CreateLetter 
       initialData={draftData} 

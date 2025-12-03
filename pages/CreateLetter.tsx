@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, Wand2, Copy, Check, Eye, Heart, Loader2 } from 'lucide-react';
+import { Sparkles, Wand2, Copy, Check, Eye, Heart, Loader2, Globe, Lock } from 'lucide-react';
 import { ThemeType, RelationshipType, LetterData } from '../types';
 import { THEMES } from '../constants';
 import { generateOrEnhanceMessage, suggestTheme } from '../services/gemini';
@@ -19,6 +19,7 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
   const [relationship, setRelationship] = useState<RelationshipType>(initialData?.relationship || RelationshipType.PARTNER);
   const [content, setContent] = useState(initialData?.content || '');
   const [selectedTheme, setSelectedTheme] = useState<ThemeType>(initialData?.theme || ThemeType.VELVET);
+  const [isPublic, setIsPublic] = useState(initialData?.isPublic || false);
   
   const [generatedLink, setGeneratedLink] = useState('');
   const [isThinking, setIsThinking] = useState(false);
@@ -33,6 +34,7 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
         setRelationship(initialData.relationship);
         setContent(initialData.content);
         setSelectedTheme(initialData.theme);
+        setIsPublic(initialData.isPublic);
         setAiMode(initialData.content.length > 50 ? 'POLISH' : 'DRAFT');
     }
   }, [initialData]);
@@ -73,7 +75,9 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
     relationship,
     content,
     theme: selectedTheme,
-    date: new Date().toISOString()
+    date: new Date().toISOString(),
+    isPublic,
+    views: 0
   });
 
   const handlePreview = () => {
@@ -119,16 +123,12 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
         const id = await saveLetterToCloud(data);
         
         if (id) {
-            // Create the clean short link using HASH Routing
-            // e.g. https://love-notes.com/#/abc12345
-            // This prevents 404 errors on static hosting
             const url = `${window.location.origin}/#/${id}`;
             setGeneratedLink(url);
             fireContinuousConfetti();
         }
     } catch (e) {
         console.error("Save failed", e);
-        // Error handling is mostly done in saveLetterToCloud with alerts
     } finally {
         setIsSaving(false);
     }
@@ -145,6 +145,13 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
   return (
     <div className={`min-h-screen relative flex items-center justify-center p-4 transition-colors duration-700 ${currentTheme.bgGradient}`}>
       <AnimatedBackground theme={selectedTheme} />
+      
+      {/* Navigation to Feed */}
+      <div className="absolute top-4 right-4 z-50">
+          <a href="/#/feed" className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full text-white font-bold transition-all text-sm border border-white/20">
+              <Globe size={16} /> Community Feed
+          </a>
+      </div>
       
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
@@ -228,27 +235,46 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
                 </div>
             </div>
 
-            <div className="space-y-2">
-                <label className="text-xs font-bold text-white/70 uppercase tracking-wider ml-1">Select Theme</label>
-                <div className="grid grid-cols-4 sm:grid-cols-8 gap-3">
-                    {Object.values(THEMES).map(t => (
-                        <button
-                            key={t.id}
-                            onClick={() => setSelectedTheme(t.id)}
-                            className={`group relative aspect-square rounded-xl border-2 transition-all duration-300 ${selectedTheme === t.id ? 'border-white scale-110 shadow-xl ring-2 ring-white/20' : 'border-transparent hover:scale-105 opacity-80 hover:opacity-100'}`}
-                            style={{ background: t.previewColor }}
-                            title={t.name}
-                        >
-                             {selectedTheme === t.id && (
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                    <Check size={14} className="text-white drop-shadow-md" />
-                                </div>
-                             )}
-                             <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[9px] font-bold text-white opacity-0 group-hover:opacity-100 whitespace-nowrap transition-opacity">
-                                {t.name}
-                             </span>
-                        </button>
-                    ))}
+            <div className="flex flex-col md:flex-row gap-6 md:items-end justify-between">
+                <div className="space-y-2 flex-1">
+                    <label className="text-xs font-bold text-white/70 uppercase tracking-wider ml-1">Select Theme</label>
+                    <div className="grid grid-cols-4 sm:grid-cols-8 gap-3">
+                        {Object.values(THEMES).map(t => (
+                            <button
+                                key={t.id}
+                                onClick={() => setSelectedTheme(t.id)}
+                                className={`group relative aspect-square rounded-xl border-2 transition-all duration-300 ${selectedTheme === t.id ? 'border-white scale-110 shadow-xl ring-2 ring-white/20' : 'border-transparent hover:scale-105 opacity-80 hover:opacity-100'}`}
+                                style={{ background: t.previewColor }}
+                                title={t.name}
+                            >
+                                {selectedTheme === t.id && (
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <Check size={14} className="text-white drop-shadow-md" />
+                                    </div>
+                                )}
+                                <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[9px] font-bold text-white opacity-0 group-hover:opacity-100 whitespace-nowrap transition-opacity">
+                                    {t.name}
+                                </span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Public Toggle */}
+                <div className="flex flex-col gap-2 min-w-[140px]">
+                    <label className="text-xs font-bold text-white/70 uppercase tracking-wider ml-1">Visibility</label>
+                    <button 
+                        onClick={() => setIsPublic(!isPublic)}
+                        className={`flex items-center justify-between px-3 py-2 rounded-lg border transition-all ${isPublic ? 'bg-green-500/20 border-green-500/50 text-green-100' : 'bg-white/5 border-white/10 text-white/60'}`}
+                    >
+                        <span className="text-xs font-bold flex items-center gap-2">
+                            {isPublic ? <Globe size={14} /> : <Lock size={14} />}
+                            {isPublic ? 'Public Feed' : 'Private'}
+                        </span>
+                        <div className={`w-8 h-4 rounded-full relative transition-colors ${isPublic ? 'bg-green-500' : 'bg-gray-600'}`}>
+                            <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all shadow-sm ${isPublic ? 'left-4.5' : 'left-0.5'}`} style={{ left: isPublic ? '18px' : '2px' }} />
+                        </div>
+                    </button>
                 </div>
             </div>
 
@@ -267,7 +293,7 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
                             className="flex-[2] py-3.5 rounded-xl font-bold text-black bg-white hover:bg-gray-100 shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Heart size={18} className="text-rose-500 fill-rose-500 group-hover:scale-125 transition-transform duration-300" />}
-                            {isSaving ? 'Generate Magic Link'}
+                            {isSaving ? 'Generating...' : 'Generate Magic Link'}
                         </button>
                     </>
                 ) : (

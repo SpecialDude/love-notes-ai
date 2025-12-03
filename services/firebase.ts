@@ -1,5 +1,20 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, addDoc, doc, getDoc } from "firebase/firestore";
+import { 
+  getFirestore, 
+  collection, 
+  addDoc, 
+  doc, 
+  getDoc, 
+  query, 
+  where, 
+  orderBy, 
+  limit, 
+  startAfter, 
+  getDocs,
+  updateDoc,
+  increment,
+  DocumentSnapshot 
+} from "firebase/firestore";
 import { LetterData } from "../types";
 
 // Helper to safely get env vars for Vite or Standard React App
@@ -40,7 +55,8 @@ export const saveLetterToCloud = async (data: LetterData): Promise<string | null
   try {
     const docRef = await addDoc(collection(db, "letters"), {
       ...data,
-      createdAt: new Date().toISOString()
+      views: 0, // Initialize views
+      createdAt: new Date().toISOString() // Ensure server timestamp logic
     });
     console.log("Document written with ID: ", docRef.id);
     return docRef.id;
@@ -69,7 +85,7 @@ export const getLetterFromCloud = async (id: string): Promise<LetterData | null>
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
-      return docSnap.data() as LetterData;
+      return { id: docSnap.id, ...docSnap.data() } as LetterData;
     } else {
       console.log("No such document!");
       return null;
@@ -77,5 +93,57 @@ export const getLetterFromCloud = async (id: string): Promise<LetterData | null>
   } catch (e) {
     console.error("Error getting document:", e);
     return null;
+  }
+};
+
+/**
+ * Increment view count for a letter
+ */
+export const incrementViewCount = async (id: string) => {
+  try {
+    const docRef = doc(db, "letters", id);
+    await updateDoc(docRef, {
+      views: increment(1)
+    });
+  } catch (e) {
+    console.error("Failed to increment views", e);
+  }
+};
+
+/**
+ * Fetch Public Feed (Paginated)
+ */
+export const getPublicFeed = async (lastDoc?: DocumentSnapshot) => {
+  try {
+    let q = query(
+      collection(db, "letters"),
+      where("isPublic", "==", true),
+      orderBy("createdAt", "desc"),
+      limit(5)
+    );
+
+    if (lastDoc) {
+      q = query(
+        collection(db, "letters"),
+        where("isPublic", "==", true),
+        orderBy("createdAt", "desc"),
+        startAfter(lastDoc),
+        limit(5)
+      );
+    }
+
+    const snapshot = await getDocs(q);
+    const letters: LetterData[] = [];
+    snapshot.forEach((doc) => {
+      letters.push({ id: doc.id, ...doc.data() } as LetterData);
+    });
+
+    return { 
+      letters, 
+      lastDoc: snapshot.docs[snapshot.docs.length - 1] 
+    };
+  } catch (e) {
+    console.error("Error fetching feed:", e);
+    return { letters: [], lastDoc: undefined };
   }
 };
