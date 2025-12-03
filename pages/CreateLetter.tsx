@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, Wand2, Copy, Check, Eye, Heart, Loader2, Globe, Lock } from 'lucide-react';
@@ -9,6 +8,7 @@ import { saveLetterToCloud } from '../services/firebase';
 import { getRandomMusicUrl } from '../utils/music';
 import AnimatedBackground from '../components/AnimatedBackground';
 import confetti from 'canvas-confetti';
+import { SocialShare } from '../components/SocialShare';
 
 interface Props {
   onPreview: (data: LetterData) => void;
@@ -319,25 +319,32 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
                         </button>
                     </>
                 ) : (
-                    <div className="w-full bg-green-500/20 border border-green-500/30 rounded-xl p-2 flex items-center gap-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <input 
-                            readOnly 
-                            value={generatedLink} 
-                            className="flex-1 bg-transparent text-sm text-white px-3 py-2 outline-none font-mono"
-                        />
-                        <button 
-                            onClick={copyToClipboard} 
-                            className={`px-4 py-2 rounded-lg font-bold text-sm transition-all flex items-center gap-2 ${isCopied ? 'bg-green-500 text-white shadow-lg' : 'bg-white/10 text-white hover:bg-white/20'}`}
-                        >
-                            {isCopied ? <Check size={16} /> : <Copy size={16} />}
-                            {isCopied ? 'Copied!' : 'Copy'}
-                        </button>
-                        <button 
-                             onClick={() => setGeneratedLink('')}
-                             className="px-3 py-2 text-xs text-white/50 hover:text-white underline"
-                        >
-                            Reset
-                        </button>
+                    <div className="flex flex-col gap-4 w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="w-full bg-green-500/20 border border-green-500/30 rounded-xl p-2 flex items-center gap-2">
+                            <input 
+                                readOnly 
+                                value={generatedLink} 
+                                className="flex-1 bg-transparent text-sm text-white px-3 py-2 outline-none font-mono"
+                            />
+                            <button 
+                                onClick={copyToClipboard} 
+                                className={`px-4 py-2 rounded-lg font-bold text-sm transition-all flex items-center gap-2 ${isCopied ? 'bg-green-500 text-white shadow-lg' : 'bg-white/10 text-white hover:bg-white/20'}`}
+                            >
+                                {isCopied ? <Check size={16} /> : <Copy size={16} />}
+                                {isCopied ? 'Copied!' : 'Copy'}
+                            </button>
+                            <button 
+                                onClick={() => setGeneratedLink('')}
+                                className="px-3 py-2 text-xs text-white/50 hover:text-white underline"
+                            >
+                                Reset
+                            </button>
+                        </div>
+                        
+                        <div className="text-center">
+                             <p className="text-white/60 text-xs uppercase tracking-widest mb-3 font-bold">Share via</p>
+                             <SocialShare url={generatedLink} />
+                        </div>
                     </div>
                 )}
             </div>

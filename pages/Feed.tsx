@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { LetterData, ThemeType } from '../types';
 import { getPublicFeed, incrementViewCount } from '../services/firebase';
@@ -6,6 +5,7 @@ import { THEMES } from '../constants';
 import { getRandomMusicUrl } from '../utils/music';
 import AnimatedBackground from '../components/AnimatedBackground';
 import MusicPlayer from '../components/MusicPlayer';
+import { SocialShare } from '../components/SocialShare';
 import { ArrowLeft, Eye, Heart, Loader2, Share2, Check, ChevronDown, Copy } from 'lucide-react';
 import { DocumentSnapshot } from 'firebase/firestore';
 
@@ -16,7 +16,7 @@ const Feed: React.FC = () => {
   const [activeTheme, setActiveTheme] = useState<ThemeType>(ThemeType.VELVET);
   const [activeMusic, setActiveMusic] = useState<string>('');
   const [activeIndex, setActiveIndex] = useState<number>(0);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [shareModalLetterId, setShareModalLetterId] = useState<string | null>(null);
   
   // Track viewed IDs to prevent double counting in same session
   const viewedIds = useRef<Set<string>>(new Set());
@@ -55,7 +55,7 @@ const Feed: React.FC = () => {
   // Track visibility for active card detection
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
       const container = e.currentTarget;
-      const index = Math.round(container.scrollTop / window.innerHeight);
+      const index = Math.round(container.scrollTop / container.clientHeight);
       
       if (index !== activeIndex && letters[index]) {
           setActiveIndex(index);
@@ -106,13 +106,6 @@ const Feed: React.FC = () => {
 
       return () => clearTimeout(timer);
   }, [activeIndex, letters]);
-
-  const handleShare = (id: string) => {
-      const url = `${window.location.origin}/#/${id}`;
-      navigator.clipboard.writeText(url);
-      setCopiedId(id);
-      setTimeout(() => setCopiedId(null), 2000);
-  };
 
   return (
     <div className="relative h-screen w-full overflow-hidden bg-black text-white">
@@ -218,14 +211,14 @@ const Feed: React.FC = () => {
                                 {/* Share */}
                                 {letter.id && (
                                     <button 
-                                        onClick={() => handleShare(letter.id!)}
+                                        onClick={() => setShareModalLetterId(letter.id!)}
                                         className="flex flex-col items-center gap-1 group active:scale-90 transition-transform"
                                     >
-                                        <div className={`w-12 h-12 flex items-center justify-center backdrop-blur-md rounded-full border shadow-lg transition-colors ${copiedId === letter.id ? 'bg-green-500 border-green-400 text-white' : 'bg-black/20 border-white/20 text-white hover:bg-white/20'}`}>
-                                            {copiedId === letter.id ? <Check size={20} /> : <Share2 size={20} />}
+                                        <div className={`w-12 h-12 flex items-center justify-center backdrop-blur-md rounded-full border shadow-lg transition-colors ${shareModalLetterId === letter.id ? 'bg-white text-black' : 'bg-black/20 border-white/20 text-white hover:bg-white/20'}`}>
+                                            <Share2 size={20} />
                                         </div>
                                         <span className="text-[10px] font-bold text-white drop-shadow-md bg-black/20 px-2 py-0.5 rounded-full">
-                                            {copiedId === letter.id ? 'Copied' : 'Share'}
+                                            Share
                                         </span>
                                     </button>
                                 )}
@@ -266,6 +259,28 @@ const Feed: React.FC = () => {
                  </div>
             )}
         </div>
+
+        {/* Share Modal Overlay */}
+        {shareModalLetterId && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={() => setShareModalLetterId(null)}>
+                <div 
+                    className="bg-white rounded-3xl p-8 w-full max-w-sm text-center shadow-2xl animate-in zoom-in-95 duration-200" 
+                    onClick={e => e.stopPropagation()}
+                >
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2 font-serif">Share LoveNote</h3>
+                    <p className="text-gray-500 text-sm mb-6">Spread the love with the world</p>
+                    
+                    <SocialShare url={`${window.location.origin}/#/${shareModalLetterId}`} />
+                    
+                    <button 
+                        onClick={() => setShareModalLetterId(null)} 
+                        className="mt-8 text-gray-400 hover:text-gray-800 font-bold text-xs uppercase tracking-widest transition-colors"
+                    >
+                        Close
+                    </button>
+                </div>
+            </div>
+        )}
     </div>
   );
 };
