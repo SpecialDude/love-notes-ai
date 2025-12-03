@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Check } from 'lucide-react';
 
@@ -26,7 +27,7 @@ const SocialIcon: React.FC<{
   </button>
 );
 
-export const SocialShare: React.FC<Props> = ({ url, message = "Check out this LoveNote!", className = "" }) => {
+export const SocialShare: React.FC<Props> = ({ url, message = "A special message is waiting for you 💌✨", className = "" }) => {
   const [copied, setCopied] = useState(false);
   const encodedUrl = encodeURIComponent(url);
   const encodedText = encodeURIComponent(message);

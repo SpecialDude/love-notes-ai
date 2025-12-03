@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, Wand2, Copy, Check, Eye, Heart, Loader2, Globe, Lock } from 'lucide-react';
@@ -343,7 +344,10 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
                         
                         <div className="text-center">
                              <p className="text-white/60 text-xs uppercase tracking-widest mb-3 font-bold">Share via</p>
-                             <SocialShare url={generatedLink} />
+                             <SocialShare 
+                                url={generatedLink} 
+                                message="I wrote a special secret note for you 💌✨ Tap to reveal:" 
+                             />
                         </div>
                     </div>
                 )}

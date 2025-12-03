@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { LetterData, ThemeType } from '../types';
 import { getPublicFeed, incrementViewCount } from '../services/firebase';
@@ -270,7 +271,10 @@ const Feed: React.FC = () => {
                     <h3 className="text-2xl font-bold text-gray-900 mb-2 font-serif">Share LoveNote</h3>
                     <p className="text-gray-500 text-sm mb-6">Spread the love with the world</p>
                     
-                    <SocialShare url={`${window.location.origin}/#/${shareModalLetterId}`} />
+                    <SocialShare 
+                        url={`${window.location.origin}/#/${shareModalLetterId}`} 
+                        message="Read this beautiful note on LoveNotes 💖✨"
+                    />
                     
                     <button 
                         onClick={() => setShareModalLetterId(null)} 
