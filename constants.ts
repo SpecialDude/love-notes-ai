@@ -1,14 +1,15 @@
+
 import { ThemeConfig, ThemeType } from './types';
 
 const MUSIC_URLS = {
-  // Stable Wikimedia Commons links (Classical/Public Domain)
-  PIANO: "https://upload.wikimedia.org/wikipedia/commons/b/b3/Liszt_-_Liebestraum_No_3.ogg", // Liebestraum - Liszt
-  ACOUSTIC: "https://upload.wikimedia.org/wikipedia/commons/3/35/Gymnopedie_No_1.ogg", // Gymnopédie No. 1 - Satie
-  AMBIENT: "https://upload.wikimedia.org/wikipedia/commons/f/f3/Ludwig_van_Beethoven_-_Sonata_No._14%2C_Op._27_No._2_%28%22Moonlight%22%29_-_I._Adagio_sostenuto.ogg", // Moonlight Sonata - Beethoven
-  CINEMATIC: "https://upload.wikimedia.org/wikipedia/commons/2/26/Johann_Sebastian_Bach_-_Air_on_the_G_String.ogg", // Air on the G String - Bach
-  JAZZ: "https://upload.wikimedia.org/wikipedia/commons/5/52/Scott_Joplin_-_The_Entertainer_%281902%29.ogg", // The Entertainer (Ragtime/Noir vibe)
-  LOFI: "https://upload.wikimedia.org/wikipedia/commons/8/87/Erik_Satie_-_Gnossienne_1.ogg", // Gnossienne No. 1 (Melancholic/Vintage)
-  WAVES: "https://upload.wikimedia.org/wikipedia/commons/c/c9/Debussy_-_Clair_de_lune.ogg" // Clair de Lune - Debussy
+  // Stable Internet Archive MP3 links (Universally supported compared to OGG)
+  PIANO: "https://ia800305.us.archive.org/3/items/LisztLiebestraumNo3/Liszt_Liebestraum_No3.mp3", // Liebestraum - Liszt
+  ACOUSTIC: "https://ia800504.us.archive.org/13/items/ErikSatieGymnopedieNo1/Erik%20Satie%20-%20Gymnopedie%20No%201.mp3", // Gymnopédie No. 1 - Satie
+  AMBIENT: "https://ia802807.us.archive.org/2/items/BeethovenMoonlightSonata/Beethoven-MoonlightSonata.mp3", // Moonlight Sonata - Beethoven
+  CINEMATIC: "https://ia600500.us.archive.org/3/items/BachAirOnTheGString/Bach%20-%20Air%20on%20the%20G%20String.mp3", // Air on the G String - Bach
+  JAZZ: "https://ia800303.us.archive.org/34/items/ScottJoplinTheEntertainer1902/Scott%20Joplin%20-%20The%20Entertainer%20%281902%29.mp3", // The Entertainer
+  LOFI: "https://ia800300.us.archive.org/8/items/ErikSatieGnossienneNo1/Erik%20Satie%20-%20Gnossienne%20No%201.mp3", // Gnossienne No. 1
+  WAVES: "https://ia800302.us.archive.org/27/items/DebussyClairDeLune/Debussy%20-%20Clair%20de%20lune.mp3" // Clair de Lune - Debussy
 };
 
 export const THEMES: Record<ThemeType, ThemeConfig> = {

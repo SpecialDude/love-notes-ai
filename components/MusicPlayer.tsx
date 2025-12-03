@@ -1,6 +1,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
+import { getRandomMusicUrl } from '../utils/music';
 
 interface Props {
   src: string;
@@ -9,20 +10,25 @@ interface Props {
 
 const MusicPlayer: React.FC<Props> = ({ src, autoPlay }) => {
   const audioRef = useRef<HTMLAudioElement>(null);
+  const [currentSrc, setCurrentSrc] = useState(src);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [usedFallback, setUsedFallback] = useState(false);
+
+  // Sync prop src to internal state, resetting fallback logic when song changes
+  useEffect(() => {
+    setCurrentSrc(src);
+    setUsedFallback(false);
+    setHasError(false);
+  }, [src]);
 
   useEffect(() => {
-    // Reset error state when src changes
-    setHasError(false);
-    // console.log("MusicPlayer attempting to load:", src);
-    
     if (audioRef.current) {
         audioRef.current.volume = 0.5;
         // Try autoplay if we already interacted
-        if (autoPlay && hasInteracted && !hasError) {
+        if (autoPlay && hasInteracted && !hasError && audioRef.current.paused) {
              const playPromise = audioRef.current.play();
              if (playPromise !== undefined) {
                 playPromise
@@ -34,7 +40,7 @@ const MusicPlayer: React.FC<Props> = ({ src, autoPlay }) => {
              }
         }
     }
-  }, [src, autoPlay, hasInteracted, hasError]);
+  }, [currentSrc, autoPlay, hasInteracted, hasError]);
 
   // Expose a listener for the first interaction on the page to unlock AudioContext
   useEffect(() => {
@@ -76,22 +82,39 @@ const MusicPlayer: React.FC<Props> = ({ src, autoPlay }) => {
 
   const handleError = (e: React.SyntheticEvent<HTMLAudioElement, Event>) => {
     const target = e.target as HTMLAudioElement;
-    console.warn(`MusicPlayer Error (${target.error?.code}): Could not load ${src}. Error message: ${target.error?.message}`);
+    console.warn(`MusicPlayer Error (${target.error?.code}): Could not load ${currentSrc}.`);
+    
+    // Fallback Logic
+    if (!usedFallback) {
+        console.log("Attempting to fallback to music from Environment Variables...");
+        const fallbackUrl = getRandomMusicUrl();
+        
+        if (fallbackUrl && fallbackUrl !== currentSrc) {
+            console.log("Fallback URL found:", fallbackUrl);
+            setUsedFallback(true);
+            setCurrentSrc(fallbackUrl);
+            // We do not setHasError(true) yet, we give the fallback a chance
+            return;
+        } else {
+            console.warn("No fallback URL available in Env Vars or it is the same as broken URL.");
+        }
+    }
+
+    // If we are here, either fallback failed or wasn't available
     setHasError(true);
     setIsPlaying(false);
   };
 
-  if (hasError) return null; // Hide player if broken
+  if (hasError) return null; // Hide player if completely broken
 
   return (
     <div className="fixed bottom-4 right-4 z-50 flex items-center gap-2 bg-white/80 backdrop-blur-sm p-3 rounded-full shadow-lg border border-pink-100 transition-all hover:scale-105 animate-in fade-in slide-in-from-bottom-4">
       <audio 
         ref={audioRef} 
-        src={src} 
+        src={currentSrc} 
         loop 
         preload="auto" 
         onError={handleError}
-        // Removed crossOrigin to allow playing from standard public URLs without strict CORS headers
       />
       
       <button 
