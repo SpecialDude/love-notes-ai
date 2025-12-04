@@ -10,6 +10,7 @@ import { getRandomMusicUrl } from '../utils/music';
 import AnimatedBackground from '../components/AnimatedBackground';
 import confetti from 'canvas-confetti';
 import { SocialShare } from '../components/SocialShare';
+import { useToast } from '../components/Toast';
 
 interface Props {
   onPreview: (data: LetterData) => void;
@@ -17,6 +18,7 @@ interface Props {
 }
 
 const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
+  const { showToast } = useToast();
   const [senderName, setSenderName] = useState(initialData?.senderName || '');
   const [recipientName, setRecipientName] = useState(initialData?.recipientName || '');
   const [relationship, setRelationship] = useState<RelationshipType>(initialData?.relationship || RelationshipType.PARTNER);
@@ -65,7 +67,7 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
 
   const handleAIMagic = async () => {
     if (!senderName && !recipientName) {
-        alert("Please enter your names first so the AI knows who is writing!");
+        showToast("Please enter names first so the AI knows who is writing!", 'error');
         return;
     }
     
@@ -81,6 +83,7 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
     }
     
     setIsThinking(false);
+    showToast("✨ AI magic applied!", 'success');
   };
 
   const handleInstallClick = () => {
@@ -117,7 +120,10 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
   };
 
   const handlePreview = () => {
-    if (!content) return alert("Please write a message first!");
+    if (!content) {
+        showToast("Please write a message first!", 'error');
+        return;
+    }
     onPreview(getLetterData());
   };
 
@@ -149,7 +155,10 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
   };
 
   const handleGenerateLink = async () => {
-    if (!content) return alert("Please write a message first!");
+    if (!content) {
+        showToast("Please write a message first!", 'error');
+        return;
+    }
     
     setIsSaving(true);
     const data = getLetterData();
@@ -160,9 +169,11 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
             const url = `${window.location.origin}/#/${id}`;
             setGeneratedLink(url);
             fireContinuousConfetti();
+            showToast("Magic Link Created! 🎉", 'success');
         }
-    } catch (e) {
+    } catch (e: any) {
         console.error("Save failed", e);
+        showToast(e.message || "Failed to save letter. Please try again.", 'error');
         setIsSaving(false);
     } finally {
         setIsSaving(false);
@@ -172,6 +183,7 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
   const copyToClipboard = () => {
     navigator.clipboard.writeText(generatedLink);
     setIsCopied(true);
+    showToast("Link copied to clipboard!", 'success');
     setTimeout(() => setIsCopied(false), 2000);
   };
 

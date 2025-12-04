@@ -51,11 +51,11 @@ const db = getFirestore(app);
 
 /**
  * Saves a letter to Firestore and returns the Document ID (Short Link ID).
+ * Throws errors so UI can handle them with Toasts.
  */
-export const saveLetterToCloud = async (data: LetterData): Promise<string | null> => {
+export const saveLetterToCloud = async (data: LetterData): Promise<string> => {
   try {
     // Sanitize data: Firestore throws if a field is explicitly 'undefined'.
-    // We replace undefined with null.
     const sanitizedData = Object.fromEntries(
         Object.entries(data).map(([k, v]) => [k, v === undefined ? null : v])
     );
@@ -70,18 +70,16 @@ export const saveLetterToCloud = async (data: LetterData): Promise<string | null
   } catch (e: any) {
     console.error("🔥 Error adding document: ", e);
     
-    // Specific error handling for common issues
+    // Map Firebase errors to user-friendly messages
     if (e.code === 'permission-denied') {
-        alert("Firebase Permission Error: Please go to Firebase Console > Firestore > Rules and change them to 'allow read, write: if true;'");
+        throw new Error("Permission Denied: Please update Firebase Rules to 'allow read, write: if true;'");
     } else if (e.code === 'unavailable') {
-        alert("Firebase Network Error: Check your internet connection or Firewall.");
+        throw new Error("Network Error: Check your internet connection.");
     } else if (e.message.includes('undefined')) {
-        alert("Data Error: Attempted to save 'undefined' value. (This should be fixed now).");
+        throw new Error("Data Error: Invalid data structure.");
     } else {
-        alert(`Could not save letter. Error: ${e.message}`);
+        throw new Error(`Could not save: ${e.message}`);
     }
-    
-    return null;
   }
 };
 
@@ -124,8 +122,6 @@ export const incrementViewCount = async (id: string) => {
  */
 export const getPublicFeed = async (lastDoc?: DocumentSnapshot) => {
   try {
-    // NOTE: This query requires a Firestore Index (isPublic ASC, createdAt DESC)
-    // If you see an error in console with a link, CLICK THE LINK to build the index.
     let q = query(
       collection(db, "letters"),
       where("isPublic", "==", true),
@@ -155,11 +151,9 @@ export const getPublicFeed = async (lastDoc?: DocumentSnapshot) => {
     };
   } catch (e: any) {
     console.error("Error fetching feed:", e);
-    // Help user identify index issue immediately
+    // Propagate error for UI handling
     if (e.code === 'failed-precondition' && e.message.includes('index')) {
-        const msg = "🚨 MISSING FIREBASE INDEX: Open the link in the browser console (F12) to auto-create it in Firebase Console!";
-        console.error(msg);
-        alert(msg);
+        throw new Error("MISSING_INDEX");
     }
     return { letters: [], lastDoc: undefined };
   }

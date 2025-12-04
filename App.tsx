@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import CreateLetter from './pages/CreateLetter';
@@ -6,6 +7,7 @@ import Feed from './pages/Feed';
 import { LetterData } from './types';
 import { decodeLetterData } from './utils/encoding';
 import { getLetterFromCloud } from './services/firebase';
+import { ToastProvider } from './components/Toast';
 
 const App: React.FC = () => {
   const [draftData, setDraftData] = useState<LetterData | undefined>(undefined);
@@ -87,32 +89,28 @@ const App: React.FC = () => {
     );
   }
 
-  // 1. Public Feed
-  if (currentHash === '#/feed') {
-      return <Feed />;
-  }
-
-  // 2. Viewing a fetched letter (from Cloud or Link)
-  if (viewData) {
-    return <ViewLetter data={viewData} />;
-  }
-
-  // 3. Previewing a local draft
-  if (isPreviewing && draftData) {
-      return (
+  return (
+    <ToastProvider>
+      {/* 1. Public Feed */}
+      {currentHash === '#/feed' ? (
+          <Feed />
+      ) : viewData ? (
+          /* 2. Viewing a fetched letter */
+          <ViewLetter data={viewData} />
+      ) : isPreviewing && draftData ? (
+          /* 3. Previewing a local draft */
           <ViewLetter 
             data={draftData} 
             onBack={handleBackToEditor} 
           />
-      );
-  }
-
-  // 4. Creating a new letter
-  return (
-    <CreateLetter 
-      initialData={draftData} 
-      onPreview={handlePreview} 
-    />
+      ) : (
+          /* 4. Creating a new letter */
+          <CreateLetter 
+            initialData={draftData} 
+            onPreview={handlePreview} 
+          />
+      )}
+    </ToastProvider>
   );
 };
 

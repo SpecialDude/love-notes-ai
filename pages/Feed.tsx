@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { LetterData, ThemeType } from '../types';
 import { getPublicFeed, incrementViewCount } from '../services/firebase';
@@ -8,8 +9,10 @@ import MusicPlayer from '../components/MusicPlayer';
 import { SocialShare } from '../components/SocialShare';
 import { ArrowLeft, Eye, Heart, Loader2, Share2, Check, ChevronDown, Copy } from 'lucide-react';
 import { DocumentSnapshot } from 'firebase/firestore';
+import { useToast } from '../components/Toast';
 
 const Feed: React.FC = () => {
+  const { showToast } = useToast();
   const [letters, setLetters] = useState<LetterData[]>([]);
   const [lastDoc, setLastDoc] = useState<DocumentSnapshot | undefined>(undefined);
   const [loading, setLoading] = useState(false);
@@ -41,16 +44,25 @@ const Feed: React.FC = () => {
 
   const loadMore = async () => {
     setLoading(true);
-    const result = await getPublicFeed(lastDoc);
-    if (result.letters.length > 0) {
-        setLetters(prev => {
-            // Filter duplicates just in case
-            const newLetters = result.letters.filter(n => !prev.find(p => p.id === n.id));
-            return [...prev, ...newLetters];
-        });
-        setLastDoc(result.lastDoc);
+    try {
+        const result = await getPublicFeed(lastDoc);
+        if (result.letters.length > 0) {
+            setLetters(prev => {
+                // Filter duplicates just in case
+                const newLetters = result.letters.filter(n => !prev.find(p => p.id === n.id));
+                return [...prev, ...newLetters];
+            });
+            setLastDoc(result.lastDoc);
+        }
+    } catch (e: any) {
+        if (e.message === 'MISSING_INDEX') {
+             showToast("🚨 Developer Check: Open Console to Create Firebase Index", 'error');
+        } else {
+             console.error("Feed error", e);
+        }
+    } finally {
+        setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
