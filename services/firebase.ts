@@ -14,7 +14,10 @@ import {
   getDocs,
   updateDoc,
   increment,
-  DocumentSnapshot 
+  runTransaction,
+  DocumentSnapshot,
+  setDoc,
+  deleteDoc
 } from "firebase/firestore";
 import { LetterData } from "../types";
 
@@ -62,8 +65,9 @@ export const saveLetterToCloud = async (data: LetterData): Promise<string> => {
 
     const docRef = await addDoc(collection(db, "letters"), {
       ...sanitizedData,
-      views: 0, // Initialize views
-      createdAt: new Date().toISOString() // Ensure server timestamp logic
+      views: 0, 
+      likes: 0, // Initialize likes
+      createdAt: new Date().toISOString()
     });
     console.log("Document written with ID: ", docRef.id);
     return docRef.id;
@@ -118,6 +122,43 @@ export const incrementViewCount = async (id: string) => {
 };
 
 /**
+ * Toggle Like Status (Atomic Transaction)
+ * Ensures 1 like per device per letter.
+ */
+export const toggleLike = async (letterId: string, deviceId: string): Promise<boolean> => {
+  if (!letterId || !deviceId) return false;
+
+  const letterRef = doc(db, "letters", letterId);
+  // Composite key for the like receipt
+  const likeId = `${deviceId}_${letterId}`; 
+  const likeRef = doc(db, "letter_likes", likeId);
+
+  try {
+    await runTransaction(db, async (transaction) => {
+      const likeDoc = await transaction.get(likeRef);
+
+      if (likeDoc.exists()) {
+        // UNLIKE: Remove receipt, decrement counter
+        transaction.delete(likeRef);
+        transaction.update(letterRef, { likes: increment(-1) });
+      } else {
+        // LIKE: Create receipt, increment counter
+        transaction.set(likeRef, {
+            letterId,
+            deviceId,
+            likedAt: new Date().toISOString()
+        });
+        transaction.update(letterRef, { likes: increment(1) });
+      }
+    });
+    return true; // Success
+  } catch (e) {
+    console.error("Transaction failed: ", e);
+    return false; // Failure
+  }
+};
+
+/**
  * Fetch Public Feed (Paginated)
  */
 export const getPublicFeed = async (lastDoc?: DocumentSnapshot) => {
@@ -151,7 +192,6 @@ export const getPublicFeed = async (lastDoc?: DocumentSnapshot) => {
     };
   } catch (e: any) {
     console.error("Error fetching feed:", e);
-    // Propagate error for UI handling
     if (e.code === 'failed-precondition' && e.message.includes('index')) {
         throw new Error("MISSING_INDEX");
     }

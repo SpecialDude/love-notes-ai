@@ -1,15 +1,18 @@
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { LetterData, ThemeType } from '../types';
-import { getPublicFeed, incrementViewCount } from '../services/firebase';
+import { getPublicFeed, incrementViewCount, toggleLike } from '../services/firebase';
 import { THEMES } from '../constants';
 import { getRandomMusicUrl } from '../utils/music';
+import { getDeviceId, getLocalLikedIds, addLocalLike, removeLocalLike } from '../utils/device';
 import AnimatedBackground from '../components/AnimatedBackground';
 import MusicPlayer from '../components/MusicPlayer';
 import { SocialShare } from '../components/SocialShare';
 import { ArrowLeft, Eye, Heart, Loader2, Share2, Check, ChevronDown, Copy } from 'lucide-react';
 import { DocumentSnapshot } from 'firebase/firestore';
 import { useToast } from '../components/Toast';
+import { motion, AnimatePresence } from 'framer-motion';
+import confetti from 'canvas-confetti';
 
 const Feed: React.FC = () => {
   const { showToast } = useToast();
@@ -21,12 +24,17 @@ const Feed: React.FC = () => {
   const [activeIndex, setActiveIndex] = useState<number>(0);
   const [shareModalLetterId, setShareModalLetterId] = useState<string | null>(null);
   
+  // Like State
+  const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
+
   // Track viewed IDs to prevent double counting in same session
   const viewedIds = useRef<Set<string>>(new Set());
   
   // Set Title
   useEffect(() => {
     document.title = "💖 Community Feed | LoveNotes";
+    // Initialize Liked Cache
+    setLikedIds(getLocalLikedIds());
   }, []);
 
   const observer = useRef<IntersectionObserver | null>(null);
@@ -48,7 +56,6 @@ const Feed: React.FC = () => {
         const result = await getPublicFeed(lastDoc);
         if (result.letters.length > 0) {
             setLetters(prev => {
-                // Filter duplicates just in case
                 const newLetters = result.letters.filter(n => !prev.find(p => p.id === n.id));
                 return [...prev, ...newLetters];
             });
@@ -69,7 +76,6 @@ const Feed: React.FC = () => {
     loadMore();
   }, []);
 
-  // Track visibility for active card detection
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
       const container = e.currentTarget;
       const index = Math.round(container.scrollTop / container.clientHeight);
@@ -80,7 +86,6 @@ const Feed: React.FC = () => {
           const theme = THEMES[currentLetter.theme];
           setActiveTheme(currentLetter.theme);
           
-          // Music Priority: Saved URL -> Env Random -> Theme Default
           let music = currentLetter.musicUrl;
           if (!music) music = getRandomMusicUrl() || undefined;
           if (!music) music = theme.musicUrl;
@@ -89,12 +94,11 @@ const Feed: React.FC = () => {
       }
   };
 
-  // Smart View Counting: Only count if user stays on card for 2 seconds
+  // View counting logic
   useEffect(() => {
       const currentLetter = letters[activeIndex];
       if (!currentLetter || !currentLetter.id) return;
 
-      // Ensure music is set for the initial item load if it wasn't already
       if (activeMusic === '') {
         const theme = THEMES[currentLetter.theme];
         setActiveTheme(currentLetter.theme);
@@ -106,7 +110,6 @@ const Feed: React.FC = () => {
         if (music) setActiveMusic(music);
       }
 
-      // If already viewed in this session, don't count again
       if (viewedIds.current.has(currentLetter.id)) return;
 
       const timer = setTimeout(() => {
@@ -114,7 +117,6 @@ const Feed: React.FC = () => {
             incrementViewCount(currentLetter.id);
             viewedIds.current.add(currentLetter.id);
             
-            // Optimistically update view count in UI without triggering re-render loop
             setLetters(prev => prev.map((l, i) => 
                 i === activeIndex ? { ...l, views: (l.views || 0) + 1 } : l
             ));
@@ -124,25 +126,77 @@ const Feed: React.FC = () => {
       return () => clearTimeout(timer);
   }, [activeIndex, letters]);
 
+  const handleToggleLike = async (letterId: string, event: React.MouseEvent) => {
+    event.stopPropagation();
+    const deviceId = getDeviceId();
+    const isLiked = likedIds.has(letterId);
+
+    // 1. Optimistic Update (Immediate Feedback)
+    if (isLiked) {
+        // SAD: Unlike
+        const newSet = new Set(likedIds);
+        newSet.delete(letterId);
+        setLikedIds(newSet);
+        removeLocalLike(letterId);
+        
+        setLetters(prev => prev.map(l => l.id === letterId ? { ...l, likes: (l.likes || 0) - 1 } : l));
+        
+        // Sad Tooltip via Toast
+        showToast("Oh no... 💔 Unliked", 'info');
+    } else {
+        // HAPPY: Like
+        const newSet = new Set(likedIds);
+        newSet.add(letterId);
+        setLikedIds(newSet);
+        addLocalLike(letterId);
+        
+        setLetters(prev => prev.map(l => l.id === letterId ? { ...l, likes: (l.likes || 0) + 1 } : l));
+
+        // HAPPY: Confetti
+        const btn = event.currentTarget.getBoundingClientRect();
+        const x = (btn.left + btn.width / 2) / window.innerWidth;
+        const y = (btn.top + btn.height / 2) / window.innerHeight;
+        
+        confetti({
+            particleCount: 15,
+            spread: 60,
+            origin: { x, y },
+            colors: ['#ef4444', '#f472b6', '#ffffff'],
+            shapes: ['circle', 'square'], // Heart shape support varies by browser, sticking to reliable shapes
+            scalar: 0.8
+        });
+    }
+
+    // 2. Server Update (Background)
+    const success = await toggleLike(letterId, deviceId);
+    if (!success) {
+        // Revert if server fails (Rare)
+        if (isLiked) {
+            addLocalLike(letterId);
+            setLikedIds(prev => new Set(prev).add(letterId));
+            setLetters(prev => prev.map(l => l.id === letterId ? { ...l, likes: (l.likes || 0) + 1 } : l));
+        } else {
+            removeLocalLike(letterId);
+            setLikedIds(prev => { const n = new Set(prev); n.delete(letterId); return n; });
+            setLetters(prev => prev.map(l => l.id === letterId ? { ...l, likes: (l.likes || 0) - 1 } : l));
+        }
+    }
+  };
+
   return (
     <div className="relative h-screen w-full overflow-hidden bg-black text-white">
-        
-        {/* Dynamic Background */}
         <div className={`absolute inset-0 transition-colors duration-1000 ${THEMES[activeTheme].bgGradient}`}>
             <AnimatedBackground theme={activeTheme} />
         </div>
 
-        {/* Dynamic Music */}
         {activeMusic && <MusicPlayer src={activeMusic} autoPlay={true} />}
 
-        {/* Header / Nav */}
         <div className="fixed top-0 left-0 w-full z-50 p-4 flex justify-between items-start pointer-events-none">
             <a href="/" className="pointer-events-auto flex items-center gap-2 px-4 py-2 bg-black/20 backdrop-blur-md border border-white/20 rounded-full text-white font-bold text-xs uppercase tracking-wide hover:bg-black/40 transition-all shadow-lg hover:scale-105">
                 <ArrowLeft size={14} /> Create Note
             </a>
         </div>
 
-        {/* Scroll Hint */}
         {letters.length > 0 && (
             <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex flex-col items-center gap-1 opacity-60 animate-bounce pointer-events-none">
                 <span className="text-[10px] uppercase tracking-widest text-white font-medium">Scroll</span>
@@ -150,7 +204,6 @@ const Feed: React.FC = () => {
             </div>
         )}
 
-        {/* Feed Container */}
         <div 
             className="h-full w-full overflow-y-scroll snap-y snap-mandatory scroll-smooth relative z-10 no-scrollbar"
             onScroll={handleScroll}
@@ -159,6 +212,7 @@ const Feed: React.FC = () => {
                 const theme = THEMES[letter.theme];
                 const isLast = index === letters.length - 1;
                 const isActive = index === activeIndex;
+                const isLiked = letter.id ? likedIds.has(letter.id) : false;
                 
                 return (
                     <div 
@@ -168,7 +222,7 @@ const Feed: React.FC = () => {
                     >
                          <div className="relative w-full max-w-4xl flex items-center justify-center">
                             
-                            {/* LEFT: The Letter Card */}
+                            {/* The Letter Card */}
                             <div className={`
                                 relative w-full max-w-xl max-h-[70vh] 
                                 flex flex-col
@@ -178,17 +232,13 @@ const Feed: React.FC = () => {
                                 transition-all duration-700
                                 ${isActive ? 'scale-100 opacity-100 translate-y-0' : 'scale-90 opacity-40 translate-y-10'}
                             `}>
-                                {/* Postage Stamp Decoration */}
                                 <div className="absolute -top-3 -right-3 w-16 h-20 bg-white border-4 border-double border-gray-300 shadow-md transform rotate-6 z-20 flex items-center justify-center overflow-hidden">
                                     <div className="w-[90%] h-[90%] border border-dashed border-gray-400 opacity-50 bg-gray-100 flex items-center justify-center">
                                         <Heart size={20} className="text-red-300 fill-red-100" />
                                     </div>
                                 </div>
 
-                                {/* Scrollable Content Area */}
-                                {/* Added pr-16 for mobile to ensure text doesn't go under buttons */}
                                 <div className="flex-1 overflow-y-auto custom-scrollbar pl-8 py-8 pr-16 md:p-12 md:pr-12">
-                                    {/* Date */}
                                     <div className="mb-6 opacity-60 text-xs font-serif uppercase tracking-widest border-b border-current pb-2 w-fit">
                                         {new Date(letter.date).toLocaleDateString()}
                                     </div>
@@ -208,13 +258,32 @@ const Feed: React.FC = () => {
                                 </div>
                             </div>
 
-                            {/* RIGHT: Sidebar Actions (TikTok Style) */}
+                            {/* Sidebar Actions */}
                             <div className={`
                                 absolute right-2 bottom-24 md:right-[-60px] md:bottom-auto 
                                 flex flex-col gap-6 z-30
                                 transition-all duration-500 delay-300
                                 ${isActive ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-10'}
                             `}>
+                                {/* Like Button */}
+                                {letter.id && (
+                                    <motion.button 
+                                        whileTap={{ scale: 0.8 }}
+                                        onClick={(e) => handleToggleLike(letter.id!, e)}
+                                        className="flex flex-col items-center gap-1 group relative"
+                                    >
+                                        <div className={`
+                                            w-12 h-12 flex items-center justify-center backdrop-blur-md rounded-full border shadow-lg transition-all duration-300
+                                            ${isLiked ? 'bg-red-500/20 border-red-500 text-red-500 scale-110' : 'bg-black/20 border-white/20 text-white hover:bg-white/20'}
+                                        `}>
+                                            <Heart size={20} className={`transition-all duration-300 ${isLiked ? 'fill-red-500' : ''}`} />
+                                        </div>
+                                        <span className="text-[10px] font-bold text-white drop-shadow-md bg-black/20 px-2 py-0.5 rounded-full">
+                                            {letter.likes || 0}
+                                        </span>
+                                    </motion.button>
+                                )}
+
                                 {/* Views */}
                                 <div className="flex flex-col items-center gap-1 group">
                                     <div className="w-12 h-12 flex items-center justify-center bg-black/20 backdrop-blur-md rounded-full text-white border border-white/20 shadow-lg group-hover:bg-black/40 transition-colors">
@@ -277,7 +346,6 @@ const Feed: React.FC = () => {
             )}
         </div>
 
-        {/* Share Modal Overlay */}
         {shareModalLetterId && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={() => setShareModalLetterId(null)}>
                 <div 

@@ -115,6 +115,7 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
         date: new Date().toISOString(),
         isPublic,
         views: 0,
+        likes: 0, // Initialize likes
         musicUrl: safeMusicUrl as string | undefined
     };
   };

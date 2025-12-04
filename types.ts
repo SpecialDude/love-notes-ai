@@ -45,6 +45,7 @@ export interface LetterData {
   date: string;
   isPublic: boolean;
   views: number;
+  likes: number; // Added likes count
   musicUrl?: string;
 }
 
