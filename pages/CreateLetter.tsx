@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, Wand2, Copy, Check, Eye, Heart, Loader2, Globe, Lock, Download } from 'lucide-react';
-import { ThemeType, RelationshipType, LetterData } from '../types';
+import { Sparkles, Wand2, Copy, Check, Eye, Heart, Loader2, Globe, Lock, Download, Calendar, Gift } from 'lucide-react';
+import { ThemeType, RelationshipType, LetterData, ThemeCategory } from '../types';
 import { THEMES } from '../constants';
 import { generateOrEnhanceMessage, suggestTheme } from '../services/gemini';
 import { saveLetterToCloud } from '../services/firebase';
@@ -25,6 +25,8 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
   const [content, setContent] = useState(initialData?.content || '');
   const [selectedTheme, setSelectedTheme] = useState<ThemeType>(initialData?.theme || ThemeType.VELVET);
   const [isPublic, setIsPublic] = useState(initialData?.isPublic || false);
+  const [unlockDate, setUnlockDate] = useState<string>(initialData?.unlockDate || '');
+  const [showDatePicker, setShowDatePicker] = useState(false);
   
   const [generatedLink, setGeneratedLink] = useState('');
   const [isThinking, setIsThinking] = useState(false);
@@ -32,6 +34,9 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
   const [isCopied, setIsCopied] = useState(false);
   const [aiMode, setAiMode] = useState<'DRAFT' | 'POLISH'>((initialData?.content?.length || 0) > 50 ? 'POLISH' : 'DRAFT');
   
+  // Theme Category Tab State
+  const [activeCategory, setActiveCategory] = useState<ThemeCategory>(THEMES[initialData?.theme || ThemeType.VELVET].category);
+
   // PWA Install State
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
@@ -56,7 +61,9 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
         setContent(initialData.content);
         setSelectedTheme(initialData.theme);
         setIsPublic(initialData.isPublic);
+        setUnlockDate(initialData.unlockDate || '');
         setAiMode(initialData.content.length > 50 ? 'POLISH' : 'DRAFT');
+        setActiveCategory(THEMES[initialData.theme].category);
     }
   }, [initialData]);
 
@@ -79,7 +86,10 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
     
     if (content.length < 20 && result.length > 20) {
         const suggested = await suggestTheme(result, relationship);
-        if (suggested) setSelectedTheme(suggested);
+        if (suggested) {
+            setSelectedTheme(suggested);
+            setActiveCategory(THEMES[suggested].category);
+        }
     }
     
     setIsThinking(false);
@@ -115,8 +125,9 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
         date: new Date().toISOString(),
         isPublic,
         views: 0,
-        likes: 0, // Initialize likes
-        musicUrl: safeMusicUrl as string | undefined
+        likes: 0, 
+        musicUrl: safeMusicUrl as string | undefined,
+        unlockDate: unlockDate || undefined
     };
   };
 
@@ -295,11 +306,24 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
                 </div>
             </div>
 
-            <div className="flex flex-col md:flex-row gap-6 md:items-end justify-between">
-                <div className="space-y-2 flex-1">
+            <div className="flex flex-col gap-4">
+                 <div className="flex items-center justify-between">
                     <label className="text-xs font-bold text-white/70 uppercase tracking-wider ml-1">Select Theme</label>
-                    <div className="grid grid-cols-4 sm:grid-cols-8 gap-3">
-                        {Object.values(THEMES).map(t => (
+                    <div className="flex gap-2">
+                        {Object.values(ThemeCategory).map(cat => (
+                            <button
+                                key={cat}
+                                onClick={() => setActiveCategory(cat)}
+                                className={`px-2 py-1 text-[10px] rounded-lg border transition-colors ${activeCategory === cat ? 'bg-white text-black border-white' : 'text-white/60 border-transparent hover:bg-white/10'}`}
+                            >
+                                {cat}
+                            </button>
+                        ))}
+                    </div>
+                 </div>
+                 
+                 <div className="grid grid-cols-4 sm:grid-cols-8 gap-3">
+                        {Object.values(THEMES).filter(t => t.category === activeCategory).map(t => (
                             <button
                                 key={t.id}
                                 onClick={() => setSelectedTheme(t.id)}
@@ -317,7 +341,32 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
                                 </span>
                             </button>
                         ))}
-                    </div>
+                </div>
+            </div>
+
+            <div className="flex flex-col md:flex-row gap-6 md:items-end justify-between pt-4 border-t border-white/10">
+                {/* Schedule Delivery Toggle */}
+                <div className="flex flex-col gap-2">
+                    <label className="text-xs font-bold text-white/70 uppercase tracking-wider ml-1">Time Capsule</label>
+                    <button 
+                        onClick={() => setShowDatePicker(!showDatePicker)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all ${unlockDate ? 'bg-amber-500/20 border-amber-500/50 text-amber-100' : 'bg-white/5 border-white/10 text-white/60'}`}
+                    >
+                        <Gift size={16} />
+                        <span className="text-xs font-bold">{unlockDate ? `Opens: ${new Date(unlockDate).toLocaleDateString()}` : 'Deliver Immediately'}</span>
+                    </button>
+                    {showDatePicker && (
+                        <div className="absolute z-20 mt-16 bg-white rounded-xl p-2 shadow-xl animate-in zoom-in-95">
+                            <input 
+                                type="datetime-local" 
+                                onChange={(e) => {
+                                    setUnlockDate(e.target.value);
+                                    setShowDatePicker(false);
+                                }}
+                                className="text-black text-sm p-1 outline-none"
+                            />
+                        </div>
+                    )}
                 </div>
 
                 {/* Public Toggle */}

@@ -1,5 +1,19 @@
 
+export enum ThemeCategory {
+  HOLIDAY = 'HOLIDAY',
+  ROMANCE = 'ROMANCE',
+  VIBES = 'VIBES',
+  CLASSIC = 'CLASSIC'
+}
+
 export enum ThemeType {
+  // Holiday
+  WINTER = 'WINTER',
+  HOLLY = 'HOLLY',
+  GINGERBREAD = 'GINGERBREAD',
+  FROST = 'FROST',
+  
+  // Existing
   VELVET = 'VELVET',      // Classic Romantic
   MIDNIGHT = 'MIDNIGHT',  // Cosmic/Deep
   EARTH = 'EARTH',        // Family/Grounded
@@ -23,6 +37,7 @@ export enum RelationshipType {
 
 export interface ThemeConfig {
   id: ThemeType;
+  category: ThemeCategory;
   name: string;
   description: string;
   textColor: string;
@@ -45,8 +60,9 @@ export interface LetterData {
   date: string;
   isPublic: boolean;
   views: number;
-  likes: number; // Added likes count
+  likes: number; 
   musicUrl?: string;
+  unlockDate?: string; // ISO Date string for Time Capsule
 }
 
 export interface GeminiResponse {

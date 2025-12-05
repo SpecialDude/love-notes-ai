@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef } from 'react';
 import { ThemeType } from '../types';
 
@@ -54,6 +55,22 @@ const AnimatedBackground: React.FC<Props> = ({ theme }) => {
 
       initThemePhysics() {
         switch (theme) {
+            case ThemeType.WINTER:
+            case ThemeType.FROST:
+                this.size = Math.random() * 3 + 1; // Snowflakes
+                this.vy = Math.random() * 1 + 0.5; // Fall down
+                this.vx = (Math.random() - 0.5) * 1; // Drift
+                break;
+            case ThemeType.HOLLY:
+                this.size = Math.random() * 4 + 2;
+                this.vy = Math.random() * 0.8 + 0.2; 
+                this.vx = Math.sin(Math.random() * 10);
+                break;
+            case ThemeType.GINGERBREAD:
+                this.size = Math.random() * 3 + 1; 
+                this.vy = -Math.random() * 0.5; // Warm rising embers
+                this.vx = (Math.random() - 0.5) * 0.5;
+                break;
             case ThemeType.VELVET:
                 this.size = Math.random() * 6 + 2;
                 this.vy = -Math.random() * 0.5 - 0.1; // Float up
@@ -103,7 +120,7 @@ const AnimatedBackground: React.FC<Props> = ({ theme }) => {
         this.y += this.vy;
 
         // Theme specific movement updates
-        if (theme === ThemeType.VELVET || theme === ThemeType.EARTH) {
+        if (theme === ThemeType.VELVET || theme === ThemeType.EARTH || theme === ThemeType.HOLLY) {
             this.x += Math.sin(this.life * 0.02) * 0.2;
         }
 
@@ -128,7 +145,28 @@ const AnimatedBackground: React.FC<Props> = ({ theme }) => {
         ctx.globalAlpha = this.alpha * 0.5; // Slightly lower opacity for global mix
         ctx.beginPath();
 
-        if (theme === ThemeType.VELVET) {
+        if (theme === ThemeType.WINTER || theme === ThemeType.FROST) {
+            // Snow
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowBlur = 4;
+            ctx.shadowColor = 'white';
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+        else if (theme === ThemeType.HOLLY) {
+            // Berries
+            ctx.fillStyle = Math.random() > 0.5 ? '#ef4444' : '#22c55e'; // Red or Green
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        else if (theme === ThemeType.GINGERBREAD) {
+            // Warm sparkles
+            ctx.fillStyle = '#fcd34d';
+            ctx.rect(this.x, this.y, 2, 2);
+            ctx.fill();
+        }
+        else if (theme === ThemeType.VELVET) {
             // Soft red glow
             const g = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size);
             g.addColorStop(0, 'rgba(255, 50, 50, 0.4)');
