@@ -91,11 +91,13 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
     
     // Confetti timing depends on animation type (Gift vs Envelope)
     const isHoliday = THEMES[data.theme].category === 'HOLIDAY';
-    // For gift box: Ribbons(0.5s) + Lid(0.6s) + Letter Rise(1.4s) -> approx 2.5s total transition
-    const confettiDelay = isHoliday ? 1500 : 800; 
+    // Slower timing for dramatic effect
+    // Gift Box: Ribbon (1.5s) + Lid (1.2s) + Letter Rise (2.0s) ~ 4.7s total
+    // Envelope: Flap (1.0s) + Letter Rise (2.0s) ~ 3.0s total
+    const confettiDelay = isHoliday ? 3500 : 2000; 
     
     setTimeout(() => fireConfetti(), confettiDelay); 
-    setTimeout(() => setStep('READING'), isHoliday ? 3500 : 2000); 
+    setTimeout(() => setStep('READING'), isHoliday ? 5000 : 3500); 
   };
 
   const fireConfetti = () => {
@@ -275,7 +277,7 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
                                     rotateY: 360,
                                     boxShadow: "0 0 40px rgba(255,255,255,0.6)",
                                     zIndex: 50, // Ensures it appears above the box lid
-                                    transition: { duration: 1.5, ease: "backOut", delay: 1.1 } // Starts AFTER Lid opens
+                                    transition: { duration: 2.0, ease: "backOut", delay: 2.7 } // Starts AFTER Lid opens (1.5s delay + 1.2s duration)
                                 } : {}}
                              >
                                 <div className="text-[6px] opacity-40 overflow-hidden h-full">
@@ -292,7 +294,7 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
                                 <motion.div 
                                     className={`absolute h-full w-10 ${ribbonColor} shadow-sm`}
                                     animate={step === 'OPENING' ? { y: 200, opacity: 0 } : { y: 0, opacity: 1 }}
-                                    transition={{ duration: 0.5, ease: "easeIn" }}
+                                    transition={{ duration: 1.5, ease: "easeIn" }}
                                 />
                              </div>
 
@@ -304,7 +306,7 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
                                     y: -150, 
                                     rotateX: -180, 
                                     opacity: 0,
-                                    transition: { duration: 0.6, ease: "circIn", delay: 0.5 } // Starts AFTER Ribbon
+                                    transition: { duration: 1.2, ease: "circIn", delay: 1.5 } // Starts AFTER Ribbon
                                 } : { 
                                     y: [0, -3, 0], // Idle
                                 }}
@@ -316,14 +318,14 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
                                   <motion.div 
                                     className={`absolute h-full w-10 ${ribbonColor} shadow-sm`} 
                                     animate={step === 'OPENING' ? { opacity: 0 } : { opacity: 1 }}
-                                    transition={{ duration: 0.3 }}
+                                    transition={{ duration: 0.5, delay: 0.5 }}
                                   />
                                   
                                   {/* THE BOW (Unties First) */}
                                   <motion.div 
                                     className="absolute -top-10 w-full flex justify-center items-end"
                                     animate={step === 'OPENING' ? { scale: 0, opacity: 0, rotate: 45 } : { scale: 1, opacity: 1 }}
-                                    transition={{ duration: 0.4, ease: "backIn" }} // Happens very first
+                                    transition={{ duration: 1.0, ease: "backIn" }} // Happens very first
                                   >
                                         <div className={`w-16 h-16 rounded-full border-[8px] border-yellow-400 rotate-45 rounded-br-none absolute -left-2 drop-shadow-md`} />
                                         <div className={`w-16 h-16 rounded-full border-[8px] border-yellow-400 -rotate-45 rounded-bl-none absolute -right-2 drop-shadow-md`} />
@@ -342,17 +344,19 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
 
                             {/* 2. The Letter Inside (Strictly Masked) */}
                             <motion.div 
-                                className={`absolute bottom-2 w-[90%] h-[90%] ${theme.paperColor} rounded-sm shadow-md z-20 flex flex-col p-6 items-center border border-black/5`}
-                                initial={{ y: 0 }}
+                                className={`absolute bottom-4 w-[90%] h-[90%] ${theme.paperColor} rounded-sm shadow-md z-20 flex flex-col p-6 items-center border border-black/5`}
+                                initial={{ y: 20 }} // Start slightly tucked in
                                 animate={step === 'OPENING' ? { 
                                     y: -300, 
                                     scale: 1.1,
                                     rotate: [0, -2, 2, 0],
                                     zIndex: 50, // Moves above everything ONLY after leaving
-                                    transition: { duration: 1.0, ease: "easeInOut", delay: 0.3 } 
-                                } : { y: 0 }}
-                                // STRICT MASK: Ensures letter doesn't peek out bottom rounded corners
-                                style={step !== 'OPENING' ? { clipPath: 'inset(0 5% 0 5% round 0 0 5px 5px)' } : {}}
+                                    transition: { 
+                                        y: { duration: 2.0, ease: "easeInOut", delay: 1.0 }, // Wait for flap
+                                        scale: { duration: 2.0, delay: 1.0 },
+                                        zIndex: { delay: 2.5 } // Ensure it's fully out before z-index switch
+                                    } 
+                                } : { y: 20, zIndex: 20 }}
                             >
                                 <div className="w-full h-full opacity-30 overflow-hidden text-[6px] md:text-[8px] leading-relaxed select-none">
                                     {data.content}
@@ -376,7 +380,7 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
                                 style={{ clipPath: 'polygon(0 0, 100% 0, 50% 100%)', backfaceVisibility: 'visible' }}
                                 initial={{ rotateX: 0 }}
                                 animate={step === 'OPENING' ? { rotateX: 180, zIndex: 0 } : { rotateX: 0 }}
-                                transition={{ duration: 0.4, ease: "easeInOut" }}
+                                transition={{ duration: 1.0, ease: "easeInOut" }}
                             >
                                 <motion.div 
                                     animate={step === 'OPENING' ? { opacity: 0 } : { opacity: 1 }}
