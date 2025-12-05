@@ -36,7 +36,7 @@ const GiftBox = ({ theme, step, data }: { theme: any, step: string, data: Letter
                     opacity: 1,
                     rotateY: 360,
                     zIndex: 50,
-                    boxShadow: "0 0 30px 10px rgba(255, 255, 200, 0.6)", // THE GLOW IS BACK
+                    boxShadow: "0 0 30px 10px rgba(255, 255, 200, 0.6)", // GLOW
                     transition: { duration: 2.5, ease: "easeInOut", delay: 3.0 } 
                 } : { zIndex: 10 }}
              >
@@ -67,7 +67,7 @@ const GiftBox = ({ theme, step, data }: { theme: any, step: string, data: Letter
                     y: -200, 
                     rotateX: -160, 
                     opacity: 0,
-                    transition: { duration: 1.4, ease: "circIn", delay: 1.6 }
+                    transition: { duration: 1.2, ease: "circIn", delay: 1.6 }
                 } : { y: [0, -3, 0] }}
                 transition={step !== 'OPENING' ? { repeat: Infinity, duration: 4, ease: "easeInOut" } : {}}
              >
@@ -95,65 +95,76 @@ const GiftBox = ({ theme, step, data }: { theme: any, step: string, data: Letter
     );
 };
 
-// --- SUB-COMPONENT: STANDARD ENVELOPE ---
+// --- SUB-COMPONENT: STANDARD ENVELOPE (RESTORED CLASSIC VERSION) ---
 const StandardEnvelope = ({ theme, step, data }: { theme: any, step: string, data: LetterData }) => {
     return (
-        <div className={`relative h-[220px] md:h-[260px] w-[300px] md:w-[350px] flex flex-col items-center justify-center`}>
+        <div className={`relative h-[200px] w-[320px] bg-black/10 flex items-center justify-center`}>
             
-            {/* 1. Back Face (z-10) */}
-            <div className={`absolute inset-0 rounded-b-lg ${theme.envelopeColor} brightness-75 z-10 shadow-lg`}></div>
+            {/* 1. Envelope Body (Back) */}
+            <div className={`absolute inset-0 rounded-md ${theme.envelopeColor} brightness-75 shadow-lg`}></div>
 
-            {/* 2. The Letter Inside (z-15) - GLOWS WHEN RISING */}
+            {/* 2. The Letter (Inside) */}
             <motion.div 
-                className={`absolute w-[90%] h-[180px] ${theme.paperColor} rounded-sm shadow-md flex flex-col p-4 items-center border border-black/5 bottom-0`}
-                initial={{ opacity: 1, scale: 0.95, y: 0 }}
+                className={`absolute left-[5%] w-[90%] h-[90%] ${theme.paperColor} rounded-sm shadow-sm flex flex-col p-4 items-center border border-black/5`}
+                style={{ top: '5%' }}
+                initial={{ y: 0, scale: 0.95, zIndex: 10 }} // Starts inside (low Z)
                 animate={step === 'OPENING' ? { 
                     y: -300, 
-                    scale: 1.5, 
-                    opacity: 1,
-                    rotate: [0, -1, 1, 0],
-                    zIndex: 50,
-                    boxShadow: "0 0 25px 5px rgba(255, 255, 255, 0.7)", // THE GLOW IS BACK
+                    scale: 1.2, 
+                    zIndex: 50, // Flies on top
+                    boxShadow: "0 0 40px 10px rgba(255, 255, 255, 0.8)", // MAGICAL GLOW
                     transition: { 
-                        y: { duration: 2.0, ease: "easeInOut", delay: 1.0 }, 
-                        scale: { duration: 1.5, delay: 1.2 },
-                        zIndex: { delay: 1.8 }, // Only switch to top when clear
-                        boxShadow: { delay: 1.0, duration: 0.5 }
+                        y: { duration: 1.5, ease: "easeInOut", delay: 0.5 }, 
+                        scale: { duration: 1.5, ease: "easeInOut", delay: 0.5 },
+                        zIndex: { delay: 0.6 }, // Switch z-index mid-flight
+                        boxShadow: { duration: 0.5, delay: 0.8 }
                     } 
-                } : { zIndex: 15 }}
-                style={{ zIndex: 15 }}
+                } : { y: 0 }}
             >
-                <div className="w-full h-full opacity-30 flex flex-col gap-2 pt-2">
-                     <div className="w-1/2 h-1 bg-black/20 rounded self-center mb-4"></div>
-                     <div className="w-full h-0.5 bg-black/20 rounded"></div>
-                     <div className="w-full h-0.5 bg-black/20 rounded"></div>
-                     <div className="w-3/4 h-0.5 bg-black/20 rounded"></div>
+                {/* Fake Text Lines */}
+                <div className="w-full h-full opacity-30 flex flex-col gap-3 pt-4">
+                     <div className="w-1/3 h-1.5 bg-black/20 rounded self-center mb-2"></div>
+                     <div className="w-full h-1 bg-black/20 rounded"></div>
+                     <div className="w-full h-1 bg-black/20 rounded"></div>
+                     <div className="w-full h-1 bg-black/20 rounded"></div>
+                     <div className="w-3/4 h-1 bg-black/20 rounded"></div>
                 </div>
             </motion.div>
 
-            {/* 3. Front Pocket (z-30) */}
-            <div className={`absolute inset-0 z-30 pointer-events-none rounded-b-lg border-t border-black/10 ${theme.envelopeColor} shadow-inner`} 
-                style={{ clipPath: 'polygon(0 0, 50% 55%, 100% 0, 100% 100%, 0 100%)' }}>
+            {/* 3. Front Pocket (The Triangle V-Shape) */}
+            {/* This sits ON TOP of the letter initially (z-20) */}
+            <div 
+                className={`absolute inset-0 z-20 pointer-events-none ${theme.envelopeColor} shadow-inner rounded-b-md border-t border-white/10`} 
+                style={{ 
+                    clipPath: 'polygon(0 0, 50% 55%, 100% 0, 100% 100%, 0 100%)' 
+                }}
+            ></div>
+            
+            {/* Recipient Name on Front */}
+            <div className="absolute bottom-6 z-30 w-full text-center pointer-events-none">
+                <p className="text-[10px] text-white/60 uppercase tracking-widest mb-1 font-sans">A Letter For</p>
+                <h2 className="text-2xl text-white font-serif italic drop-shadow-md truncate px-4">{data.recipientName}</h2>
             </div>
             
-            <div className="absolute bottom-8 z-30 text-white/90 text-center font-elegant w-full px-4 pointer-events-none">
-                <p className="text-[10px] uppercase tracking-widest opacity-70 mb-1">A Letter For</p>
-                <h2 className="text-3xl italic font-serif truncate drop-shadow-md">{data.recipientName}</h2>
-            </div>
-            
-            {/* 4. Flap (z-40) */}
+            {/* 4. Flap (Top Triangle) */}
+            {/* Sits on TOP (z-30) */}
             <motion.div
-                className={`absolute top-0 left-0 w-full h-[56%] ${theme.envelopeColor} z-40 rounded-t-lg origin-top border-b border-black/20 brightness-90`}
-                style={{ clipPath: 'polygon(0 0, 100% 0, 50% 100%)', backfaceVisibility: 'visible' }}
+                className={`absolute top-0 left-0 w-full h-full ${theme.envelopeColor} z-30 rounded-md origin-top border-b border-black/10 brightness-90`}
+                style={{ 
+                    clipPath: 'polygon(0 0, 100% 0, 50% 55%)' 
+                }}
                 initial={{ rotateX: 0 }}
                 animate={step === 'OPENING' ? { rotateX: 180, zIndex: 0 } : { rotateX: 0 }}
                 transition={{ duration: 0.8, ease: "easeInOut" }}
             >
+                {/* Heart Sticker */}
                 <motion.div 
                     animate={step === 'OPENING' ? { opacity: 0 } : { opacity: 1 }}
-                    className="absolute top-[85%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-red-800 rounded-full border-2 border-red-900 shadow-lg flex items-center justify-center"
+                    className="absolute top-[52%] left-1/2 -translate-x-1/2 -translate-y-1/2"
                 >
-                    <Heart size={20} className="text-red-200 fill-red-200/50" />
+                    <div className="w-8 h-8 bg-red-800 rounded-full border-2 border-red-900 shadow-md flex items-center justify-center">
+                        <Heart size={14} className="text-red-200 fill-red-200" />
+                    </div>
                 </motion.div>
             </motion.div>
             
@@ -237,8 +248,8 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
     // Confetti timing depends on animation type (Gift vs Envelope)
     const isHoliday = THEMES[data.theme].category === 'HOLIDAY';
     // Slower timing for dramatic effect
-    const confettiDelay = isHoliday ? 4500 : 3000; 
-    const readDelay = isHoliday ? 6500 : 4500;
+    const confettiDelay = isHoliday ? 4500 : 2500; 
+    const readDelay = isHoliday ? 6500 : 3500;
 
     setTimeout(() => fireConfetti(), confettiDelay); 
     setTimeout(() => setStep('READING'), readDelay); 
