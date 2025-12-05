@@ -88,73 +88,99 @@ const HolidayGiftBox: React.FC<{ data: LetterData, onOpen: () => void, step: str
     const boxBaseColor = theme.envelopeColor;
     const boxLidColor = theme.envelopeColor.replace('800', '700').replace('900', '800'); 
     const ribbonColor = 'bg-yellow-400';
+    const ribbonShadow = 'shadow-md';
 
     return (
         <div 
-            className="relative w-[260px] h-[200px] preserve-3d transform-style-3d hover:scale-105 transition-transform duration-300 cursor-pointer"
+            className="relative w-[280px] h-[220px] preserve-3d transform-style-3d hover:scale-105 transition-transform duration-300 cursor-pointer"
             onClick={step === 'CLOSED' ? onOpen : undefined}
         >
-                {/* --- LAYER 1: The Letter (Hidden Inside) --- */}
+                {/* --- LAYER 1: Back Wall (Inside of box) - Pushed Back --- */}
+                <div 
+                    className={`absolute inset-0 ${boxBaseColor} rounded-md brightness-75 z-10 shadow-inner`} 
+                    style={{ transform: 'translateZ(-20px)' }}
+                />
+
+                {/* --- LAYER 2: The Letter (Sandwiched) --- */}
                 <motion.div 
-                className={`absolute left-[5%] top-[5%] w-[90%] h-[90%] ${theme.paperColor} rounded-sm shadow-lg flex items-center justify-center p-4`}
-                initial={{ y: 0, scale: 0.9, opacity: 0, rotateY: 0 }}
-                animate={step === 'OPENING' ? { 
-                    y: -300, 
-                    scale: 1, 
-                    opacity: 1,
-                    rotateY: 360,
-                    zIndex: 50,
-                    boxShadow: "0 0 40px rgba(255,215,0, 0.6)", // Gold glow
-                    transition: { duration: 2.0, ease: "backOut", delay: 1.5 } 
-                } : { zIndex: 10 }}
+                    className={`absolute left-[5%] top-[5%] w-[90%] h-[90%] ${theme.paperColor} rounded-sm shadow-lg flex items-center justify-center p-4`}
+                    // Initial State: Hidden (opacity 0), Middle Depth (z: 0), Normal Size
+                    initial={{ y: 0, scale: 0.9, opacity: 0, z: 0 }}
+                    animate={step === 'OPENING' ? { 
+                        y: -180, // Slides UP
+                        opacity: 1,
+                        scale: 1, 
+                        rotateY: 0, 
+                        z: 100, // Move Forward to act as Front Layer at the end
+                        boxShadow: "0 0 50px rgba(255,215,0, 0.6)", // Magical Glow
+                    } : { opacity: 0, z: 0 }} 
+                    transition={{ 
+                        opacity: { delay: 1.5, duration: 0.5 }, // Fade in only when lid opens
+                        y: { delay: 1.5, duration: 2.0, ease: "easeInOut" }, // Rise slowly
+                        scale: { delay: 1.5, duration: 2.0 },
+                        boxShadow: { delay: 1.5, duration: 2.0 },
+                        z: { delay: 3.2, duration: 0 } // JUMP to front only after fully risen
+                    }}
+                    style={{ transformStyle: 'preserve-3d' }}
                 >
-                <div className="text-[6px] opacity-40 overflow-hidden h-full text-black leading-relaxed">
-                    {data.content}
-                </div>
+                    <div className="text-[6px] opacity-40 overflow-hidden h-full text-black leading-relaxed select-none">
+                        {data.content}
+                    </div>
                 </motion.div>
 
-                {/* --- LAYER 2: Box Base (Ribbons slide off) --- */}
-                <div className={`absolute inset-0 ${boxBaseColor} rounded-md shadow-2xl flex items-center justify-center z-20`}>
-                <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/20 pointer-events-none rounded-md" />
-                
-                <motion.div 
-                    className={`absolute h-full w-10 ${ribbonColor} shadow-sm`}
-                    animate={step === 'OPENING' ? { y: 250, opacity: 0 } : { y: 0, opacity: 1 }}
-                    transition={{ duration: 1.5, ease: "easeIn" }}
-                />
-                
-                <div className="absolute bottom-8 text-white/80 font-serif text-lg tracking-widest drop-shadow-md">
-                    {data.recipientName}
-                </div>
+                {/* --- LAYER 3: Front Wall (Visible Face) - Pushed Front --- */}
+                <div 
+                    className={`absolute inset-0 ${boxBaseColor} rounded-md shadow-2xl flex items-center justify-center z-20`}
+                    style={{ transform: 'translateZ(20px)' }}
+                >
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/20 pointer-events-none rounded-md" />
+                    
+                    {/* Vertical Ribbon */}
+                    <motion.div 
+                        className={`absolute h-full w-12 ${ribbonColor} ${ribbonShadow} z-10`}
+                        animate={step === 'OPENING' ? { y: 250, opacity: 0 } : { y: 0, opacity: 1 }}
+                        transition={{ duration: 1.5, ease: "easeIn" }}
+                    />
+                    
+                    {/* Gift Tag */}
+                    <motion.div 
+                        className="absolute z-20 top-[55%] left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#fff1f2] border-2 border-yellow-500/30 px-5 py-3 rounded shadow-lg transform -rotate-2 flex flex-col items-center min-w-[120px]"
+                        animate={step === 'OPENING' ? { opacity: 0, y: 50 } : { opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5 }}
+                    >
+                        <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-800 rounded-full ring-1 ring-white/50" />
+                        <span className="text-[8px] uppercase tracking-widest text-gray-500 mb-0.5 font-sans">For</span>
+                        <span className="font-serif text-xl text-gray-900 font-bold leading-none text-center">{data.recipientName}</span>
+                    </motion.div>
                 </div>
 
-                {/* --- LAYER 3: Box Lid (Pops up AFTER ribbons) --- */}
+                {/* --- LAYER 4: Box Lid (Top) --- */}
                 <motion.div 
-                className={`absolute -top-10 -left-[5%] w-[110%] h-[60px] ${boxLidColor || boxBaseColor} rounded-md shadow-xl z-30 flex justify-center items-start overflow-visible`}
-                style={{ transformOrigin: "top" }}
-                animate={step === 'OPENING' ? { 
-                    y: -150, 
-                    rotateX: -180, 
-                    opacity: 0,
-                    transition: { duration: 1.2, ease: "circIn", delay: 0.6 }
-                } : { 
-                    y: [0, -3, 0], // Idle bounce
-                }}
-                transition={step !== 'OPENING' ? { repeat: Infinity, duration: 4, ease: "easeInOut" } : {}}
+                    className={`absolute -top-10 -left-[5%] w-[110%] h-[60px] ${boxLidColor || boxBaseColor} rounded-md shadow-xl z-30 flex justify-center items-start overflow-visible`}
+                    style={{ transformOrigin: "top", transform: 'translateZ(20px)' }}
+                    animate={step === 'OPENING' ? { 
+                        y: -150, 
+                        rotateX: -180, 
+                        opacity: 0,
+                        transition: { duration: 1.2, ease: "circIn", delay: 0.6 }
+                    } : { 
+                        y: [0, -3, 0], // Idle bounce
+                    }}
+                    transition={step !== 'OPENING' ? { repeat: Infinity, duration: 4, ease: "easeInOut" } : {}}
                 >
                     <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-black/10 rounded-md pointer-events-none" />
                     
                     <motion.div 
-                    className={`absolute h-full w-10 ${ribbonColor} shadow-sm`} 
-                    animate={step === 'OPENING' ? { opacity: 0 } : { opacity: 1 }}
-                    transition={{ duration: 0.5, delay: 0.5 }}
+                        className={`absolute h-full w-12 ${ribbonColor} shadow-sm`} 
+                        animate={step === 'OPENING' ? { opacity: 0 } : { opacity: 1 }}
+                        transition={{ duration: 0.5, delay: 0.5 }}
                     />
                     
-                    {/* THE BOW (Unties very first) */}
+                    {/* THE BOW */}
                     <motion.div 
-                    className="absolute -top-10 w-full flex justify-center items-end"
-                    animate={step === 'OPENING' ? { scale: 0, opacity: 0, rotate: 45 } : { scale: 1, opacity: 1 }}
-                    transition={{ duration: 1.2, ease: "backIn" }} 
+                        className="absolute -top-10 w-full flex justify-center items-end"
+                        animate={step === 'OPENING' ? { scale: 0, opacity: 0, rotate: 45 } : { scale: 1, opacity: 1 }}
+                        transition={{ duration: 1.2, ease: "backIn" }} 
                     >
                         <div className={`w-16 h-16 rounded-full border-[8px] border-yellow-400 rotate-45 rounded-br-none absolute -left-2 drop-shadow-md`} />
                         <div className={`w-16 h-16 rounded-full border-[8px] border-yellow-400 -rotate-45 rounded-bl-none absolute -right-2 drop-shadow-md`} />
