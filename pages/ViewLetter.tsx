@@ -92,10 +92,11 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
     // Confetti timing depends on animation type (Gift vs Envelope)
     const isHoliday = THEMES[data.theme].category === 'HOLIDAY';
     // Slower timing for dramatic effect
-    const confettiDelay = isHoliday ? 3500 : 2500; 
-    
+    const confettiDelay = isHoliday ? 4000 : 3000; 
+    const readDelay = isHoliday ? 6000 : 4500;
+
     setTimeout(() => fireConfetti(), confettiDelay); 
-    setTimeout(() => setStep('READING'), isHoliday ? 5000 : 3500); 
+    setTimeout(() => setStep('READING'), readDelay); 
   };
 
   const fireConfetti = () => {
@@ -261,42 +262,39 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
                             </motion.div>
                          </div>
                     ) : isHoliday ? (
-                        // 3D GIFT BOX (Sequenced)
+                        // 3D GIFT BOX (Strictly Sequenced)
                         <div className="relative w-[260px] h-[200px] preserve-3d transform-style-3d hover:scale-105 transition-transform duration-300">
                              
-                             {/* --- LAYER 1: The Letter (Hidden Inside, Rises Last) --- */}
+                             {/* --- LAYER 1: The Letter (Hidden Inside) --- */}
                              <motion.div 
-                                className={`absolute left-[5%] top-[5%] w-[90%] h-[90%] ${theme.paperColor} rounded-sm shadow-lg z-10 flex items-center justify-center p-4`}
-                                initial={{ y: 0, scale: 0.9, opacity: 0 }}
+                                className={`absolute left-[5%] top-[5%] w-[90%] h-[90%] ${theme.paperColor} rounded-sm shadow-lg flex items-center justify-center p-4`}
+                                initial={{ y: 0, scale: 0.9, opacity: 0, rotateY: 0 }}
                                 animate={step === 'OPENING' ? { 
                                     y: -300, 
                                     scale: 1, 
                                     opacity: 1,
                                     rotateY: 360,
-                                    boxShadow: "0 0 40px rgba(255,255,255,0.6)",
-                                    zIndex: 50, // Ensures it appears above the box lid
-                                    transition: { duration: 2.0, ease: "backOut", delay: 2.7 } // Starts AFTER Lid opens (1.5s delay + 1.2s duration)
-                                } : {}}
+                                    zIndex: 50,
+                                    transition: { duration: 2.0, ease: "backOut", delay: 3.0 } // Starts AFTER Lid (1.6s + 1.2s buffer)
+                                } : { zIndex: 10 }}
                              >
                                 <div className="text-[6px] opacity-40 overflow-hidden h-full">
                                     {data.content}
                                 </div>
                              </motion.div>
 
-                             {/* --- LAYER 2: Box Base (Includes Vertical Ribbon) --- */}
+                             {/* --- LAYER 2: Box Base (Ribbons slide off) --- */}
                              <div className={`absolute inset-0 ${boxBaseColor} rounded-md shadow-2xl flex items-center justify-center z-20`}>
-                                {/* Gradients for depth */}
                                 <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/20 pointer-events-none rounded-md" />
                                 
-                                {/* Vertical Ribbon (Slides off first) */}
                                 <motion.div 
                                     className={`absolute h-full w-10 ${ribbonColor} shadow-sm`}
-                                    animate={step === 'OPENING' ? { y: 200, opacity: 0 } : { y: 0, opacity: 1 }}
+                                    animate={step === 'OPENING' ? { y: 250, opacity: 0 } : { y: 0, opacity: 1 }}
                                     transition={{ duration: 1.5, ease: "easeIn" }}
                                 />
                              </div>
 
-                             {/* --- LAYER 3: Box Lid (Includes Horizontal Ribbon & Bow) --- */}
+                             {/* --- LAYER 3: Box Lid (Pops up AFTER ribbons) --- */}
                              <motion.div 
                                 className={`absolute -top-10 -left-[5%] w-[110%] h-[60px] ${boxLidColor || boxBaseColor} rounded-md shadow-xl z-30 flex justify-center items-start overflow-visible`}
                                 style={{ transformOrigin: "top" }}
@@ -304,26 +302,25 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
                                     y: -150, 
                                     rotateX: -180, 
                                     opacity: 0,
-                                    transition: { duration: 1.2, ease: "circIn", delay: 1.5 } // Starts AFTER Ribbon
+                                    transition: { duration: 1.2, ease: "circIn", delay: 1.6 } // Strict Delay
                                 } : { 
-                                    y: [0, -3, 0], // Idle
+                                    y: [0, -3, 0], // Idle bounce
                                 }}
                                 transition={step !== 'OPENING' ? { repeat: Infinity, duration: 4, ease: "easeInOut" } : {}}
                              >
                                   <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-black/10 rounded-md pointer-events-none" />
                                   
-                                  {/* Horizontal Ribbon on Lid */}
                                   <motion.div 
                                     className={`absolute h-full w-10 ${ribbonColor} shadow-sm`} 
                                     animate={step === 'OPENING' ? { opacity: 0 } : { opacity: 1 }}
                                     transition={{ duration: 0.5, delay: 0.5 }}
                                   />
                                   
-                                  {/* THE BOW (Unties First) */}
+                                  {/* THE BOW (Unties very first) */}
                                   <motion.div 
                                     className="absolute -top-10 w-full flex justify-center items-end"
                                     animate={step === 'OPENING' ? { scale: 0, opacity: 0, rotate: 45 } : { scale: 1, opacity: 1 }}
-                                    transition={{ duration: 1.0, ease: "backIn" }} // Happens very first
+                                    transition={{ duration: 1.2, ease: "backIn" }} 
                                   >
                                         <div className={`w-16 h-16 rounded-full border-[8px] border-yellow-400 rotate-45 rounded-br-none absolute -left-2 drop-shadow-md`} />
                                         <div className={`w-16 h-16 rounded-full border-[8px] border-yellow-400 -rotate-45 rounded-bl-none absolute -right-2 drop-shadow-md`} />
@@ -334,51 +331,52 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
                              <p className="absolute -bottom-16 w-full text-center text-white/80 animate-pulse font-bold tracking-widest text-sm uppercase">Tap to Unwrap</p>
                         </div>
                     ) : (
-                        // STANDARD ENVELOPE (Fixed Visuals)
-                        <div className={`relative h-[220px] md:h-[260px] w-[300px] md:w-[350px] flex flex-col items-center justify-center z-20`}>
+                        // STANDARD ENVELOPE (Precise Z-Indexing)
+                        <div className={`relative h-[220px] md:h-[260px] w-[300px] md:w-[350px] flex flex-col items-center justify-center`}>
                             
-                            {/* 1. Envelope Back Face (Background) */}
+                            {/* 1. Envelope Back Face (z-10) */}
                             <div className={`absolute inset-0 rounded-b-lg ${theme.envelopeColor} brightness-75 z-10 shadow-lg`}></div>
 
-                            {/* 2. The Letter Inside (Strictly Masked) */}
+                            {/* 2. The Letter Inside (z-15) - Sandwiched and Pushed Deep */}
                             <motion.div 
-                                className={`absolute w-[90%] h-[85%] ${theme.paperColor} rounded-sm shadow-md z-20 flex flex-col p-6 items-center border border-black/5`}
-                                initial={{ y: 60 }} // Start DEEP in the pocket
+                                className={`absolute w-[90%] h-[85%] ${theme.paperColor} rounded-sm shadow-md flex flex-col p-6 items-center border border-black/5`}
+                                initial={{ y: 100, zIndex: 15, opacity: 0 }} // Start DEEP and behind pocket
                                 animate={step === 'OPENING' ? { 
                                     y: -300, 
                                     scale: 1.1,
                                     rotate: [0, -2, 2, 0],
-                                    zIndex: 50, // Moves above everything ONLY after leaving
+                                    opacity: 1,
+                                    zIndex: 50, // Moves to top ONLY after leaving
                                     transition: { 
-                                        y: { duration: 1.5, ease: "easeInOut", delay: 1.0 }, // Wait for flap
-                                        scale: { duration: 1.5, delay: 1.0 },
-                                        zIndex: { delay: 2.2 } // Ensure it's fully out before z-index switch
+                                        opacity: { duration: 0.2 },
+                                        y: { duration: 2.0, ease: "easeInOut", delay: 1.2 }, // Wait for flap
+                                        scale: { duration: 1.5, delay: 1.2 },
+                                        zIndex: { delay: 2.5 } // STRICT DELAY: Ensure it cleared the envelope
                                     } 
-                                } : { y: 60, zIndex: 20 }}
+                                } : { opacity: 1, y: 100, zIndex: 15 }}
                             >
                                 <div className="w-full h-full opacity-30 overflow-hidden text-[6px] md:text-[8px] leading-relaxed select-none">
                                     {data.content}
                                 </div>
                             </motion.div>
 
-                            {/* 3. Envelope Pocket (Front Face) */}
-                            {/* Uses clip-path to create the V-shape while keeping the bottom rectangular to cover the letter */}
+                            {/* 3. Envelope Pocket (z-30) */}
                             <div className={`absolute inset-0 z-30 pointer-events-none rounded-b-lg border-t border-black/10 ${theme.envelopeColor} shadow-inner`} 
                                 style={{ clipPath: 'polygon(0 0, 50% 55%, 100% 0, 100% 100%, 0 100%)' }}>
                             </div>
                             
-                            <div className="absolute bottom-8 z-40 text-white/90 text-center font-elegant w-full px-4 pointer-events-none">
+                            <div className="absolute bottom-8 z-30 text-white/90 text-center font-elegant w-full px-4 pointer-events-none">
                                 <p className="text-[10px] uppercase tracking-widest opacity-70 mb-1">A Letter For</p>
                                 <h2 className="text-3xl italic font-serif truncate drop-shadow-md">{data.recipientName}</h2>
                             </div>
                             
-                            {/* 4. Envelope Flap */}
+                            {/* 4. Envelope Flap (z-40) */}
                             <motion.div
                                 className={`absolute top-[-1px] left-0 w-full h-[55%] ${theme.envelopeColor} z-40 rounded-t-lg origin-top border-b border-black/20 brightness-90`}
                                 style={{ clipPath: 'polygon(0 0, 100% 0, 50% 100%)', backfaceVisibility: 'visible' }}
                                 initial={{ rotateX: 0 }}
                                 animate={step === 'OPENING' ? { rotateX: 180, zIndex: 0 } : { rotateX: 0 }}
-                                transition={{ duration: 0.8, ease: "easeInOut" }}
+                                transition={{ duration: 1.0, ease: "easeInOut" }}
                             >
                                 <motion.div 
                                     animate={step === 'OPENING' ? { opacity: 0 } : { opacity: 1 }}
