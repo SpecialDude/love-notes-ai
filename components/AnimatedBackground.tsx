@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef } from 'react';
 import { ThemeType } from '../types';
 
@@ -89,6 +90,12 @@ const AnimatedBackground: React.FC<Props> = ({ theme }) => {
                  this.vy = Math.random() * 0.5 + 0.1; // Falling leaves/dust
                  this.vx = Math.sin(Math.random() * 10) * 0.5;
                  break;
+            case ThemeType.WINTER:
+                 this.size = Math.random() * 3 + 1;
+                 this.vy = Math.random() * 1 + 0.5; // Snow falling down
+                 this.vx = Math.sin(Math.random() * Math.PI) * 0.5; // Slight drift
+                 this.y = Math.random() * -h; // Start above
+                 break;
             default: // PASTEL
                 this.size = Math.random() * 5 + 5;
                 this.vy = Math.random() * 0.5 + 0.2; // Falling confetti
@@ -103,7 +110,7 @@ const AnimatedBackground: React.FC<Props> = ({ theme }) => {
         this.y += this.vy;
 
         // Theme specific movement updates
-        if (theme === ThemeType.VELVET || theme === ThemeType.EARTH) {
+        if (theme === ThemeType.VELVET || theme === ThemeType.EARTH || theme === ThemeType.WINTER) {
             this.x += Math.sin(this.life * 0.02) * 0.2;
         }
 
@@ -117,8 +124,10 @@ const AnimatedBackground: React.FC<Props> = ({ theme }) => {
           this.life = 0;
           this.x = Math.random() * w;
           this.y = (this.vy < 0) ? h + 20 : -20; 
-          // If moving up, spawn at bottom. If moving down, spawn at top.
-          if (theme === ThemeType.MIDNIGHT) this.y = Math.random() * h; // Stars don't flow
+          
+          if (theme === ThemeType.MIDNIGHT) this.y = Math.random() * h;
+          if (theme === ThemeType.WINTER) this.y = -10; // Always restart snow at top
+
           this.initThemePhysics();
         }
       }
@@ -129,7 +138,6 @@ const AnimatedBackground: React.FC<Props> = ({ theme }) => {
         ctx.beginPath();
 
         if (theme === ThemeType.VELVET) {
-            // Soft red glow
             const g = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size);
             g.addColorStop(0, 'rgba(255, 50, 50, 0.4)');
             g.addColorStop(1, 'rgba(255, 0, 0, 0)');
@@ -138,14 +146,12 @@ const AnimatedBackground: React.FC<Props> = ({ theme }) => {
             ctx.fill();
         } 
         else if (theme === ThemeType.OCEAN) {
-            // Bubbles
             ctx.strokeStyle = 'rgba(200, 240, 255, 0.3)';
             ctx.lineWidth = 1;
             ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
             ctx.stroke();
         }
         else if (theme === ThemeType.MIDNIGHT) {
-            // Stars
             ctx.fillStyle = '#ffffff';
             ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
             ctx.fill();
@@ -159,13 +165,11 @@ const AnimatedBackground: React.FC<Props> = ({ theme }) => {
             }
         }
         else if (theme === ThemeType.VINTAGE) {
-            // Dust/Grain
             ctx.fillStyle = '#8c6b4a';
             ctx.rect(this.x, this.y, this.size, this.size);
             ctx.fill();
         }
         else if (theme === ThemeType.SUNSET) {
-            // Warm orbs
             const g = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size);
             g.addColorStop(0, 'rgba(255, 200, 100, 0.3)');
             g.addColorStop(1, 'rgba(255, 100, 50, 0)');
@@ -174,9 +178,16 @@ const AnimatedBackground: React.FC<Props> = ({ theme }) => {
             ctx.fill();
         }
         else if (theme === ThemeType.NOIR) {
-            // Subtle gray blocks
             ctx.fillStyle = 'rgba(0,0,0,0.05)';
             ctx.rect(this.x, this.y, this.size, this.size);
+            ctx.fill();
+        }
+        else if (theme === ThemeType.WINTER) {
+            // Snow
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.shadowBlur = 4;
+            ctx.shadowColor = 'white';
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
             ctx.fill();
         }
         else {

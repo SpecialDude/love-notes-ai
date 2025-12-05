@@ -28,7 +28,8 @@ const MUSIC_URLS = {
   NOIR: getMusicEnv('NOIR', "https://ia800303.us.archive.org/34/items/ScottJoplinTheEntertainer1902/Scott%20Joplin%20-%20The%20Entertainer%20%281902%29.mp3"), // The Entertainer
   VINTAGE: getMusicEnv('VINTAGE', "https://ia800300.us.archive.org/8/items/ErikSatieGnossienneNo1/Erik%20Satie%20-%20Gnossienne%20No%201.mp3"), // Gnossienne No. 1
   OCEAN: getMusicEnv('OCEAN', "https://ia800302.us.archive.org/27/items/DebussyClairDeLune/Debussy%20-%20Clair%20de%20lune.mp3"), // Clair de Lune
-  SUNSET: getMusicEnv('SUNSET', "https://ia800302.us.archive.org/27/items/DebussyClairDeLune/Debussy%20-%20Clair%20de%20lune.mp3") // Default to Clair de Lune, but configurable separately
+  SUNSET: getMusicEnv('SUNSET', "https://ia800302.us.archive.org/27/items/DebussyClairDeLune/Debussy%20-%20Clair%20de%20lune.mp3"),
+  WINTER: getMusicEnv('WINTER', "https://ia800503.us.archive.org/10/items/SilentNight_601/SilentNight.mp3") // Silent Night
 };
 
 export const THEMES: Record<ThemeType, ThemeConfig> = {
@@ -135,5 +136,18 @@ export const THEMES: Record<ThemeType, ThemeConfig> = {
     envelopeColor: "bg-orange-600",
     musicUrl: MUSIC_URLS.SUNSET,
     previewColor: "#f97316"
+  },
+  [ThemeType.WINTER]: {
+    id: ThemeType.WINTER,
+    name: "Winter",
+    description: "Christmas Magic",
+    textColor: "text-slate-900",
+    accentColor: "bg-blue-600",
+    fontFamily: "font-elegant",
+    bgGradient: "bg-gradient-to-b from-slate-900 via-blue-950 to-slate-900",
+    paperColor: "bg-slate-50",
+    envelopeColor: "bg-red-700", // Gift Box Color
+    musicUrl: MUSIC_URLS.WINTER,
+    previewColor: "#1e3a8a"
   }
 };

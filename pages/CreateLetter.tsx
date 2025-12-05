@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, Wand2, Copy, Check, Eye, Heart, Loader2, Globe, Lock, Download } from 'lucide-react';
+import { Sparkles, Wand2, Copy, Check, Eye, Heart, Loader2, Globe, Lock, Download, Calendar, Clock } from 'lucide-react';
 import { ThemeType, RelationshipType, LetterData } from '../types';
 import { THEMES } from '../constants';
 import { generateOrEnhanceMessage, suggestTheme } from '../services/gemini';
@@ -25,6 +25,10 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
   const [content, setContent] = useState(initialData?.content || '');
   const [selectedTheme, setSelectedTheme] = useState<ThemeType>(initialData?.theme || ThemeType.VELVET);
   const [isPublic, setIsPublic] = useState(initialData?.isPublic || false);
+  
+  // Time Capsule State
+  const [isTimeCapsule, setIsTimeCapsule] = useState(!!initialData?.unlockDate);
+  const [unlockDate, setUnlockDate] = useState(initialData?.unlockDate || '');
   
   const [generatedLink, setGeneratedLink] = useState('');
   const [isThinking, setIsThinking] = useState(false);
@@ -56,6 +60,10 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
         setContent(initialData.content);
         setSelectedTheme(initialData.theme);
         setIsPublic(initialData.isPublic);
+        if (initialData.unlockDate) {
+            setIsTimeCapsule(true);
+            setUnlockDate(initialData.unlockDate);
+        }
         setAiMode(initialData.content.length > 50 ? 'POLISH' : 'DRAFT');
     }
   }, [initialData]);
@@ -115,8 +123,9 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
         date: new Date().toISOString(),
         isPublic,
         views: 0,
-        likes: 0, // Initialize likes
-        musicUrl: safeMusicUrl as string | undefined
+        likes: 0, 
+        musicUrl: safeMusicUrl as string | undefined,
+        unlockDate: isTimeCapsule && unlockDate ? unlockDate : undefined
     };
   };
 
@@ -159,6 +168,19 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
     if (!content) {
         showToast("Please write a message first!", 'error');
         return;
+    }
+    
+    // Validation for time capsule
+    if (isTimeCapsule) {
+        if (!unlockDate) {
+            showToast("Please select a date to unlock your Time Capsule!", 'error');
+            return;
+        }
+        const unlockTime = new Date(unlockDate).getTime();
+        if (unlockTime <= Date.now()) {
+            showToast("The unlock date must be in the future!", 'error');
+            return;
+        }
     }
     
     setIsSaving(true);
@@ -320,21 +342,58 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
                     </div>
                 </div>
 
-                {/* Public Toggle */}
-                <div className="flex flex-col gap-2 min-w-[140px]">
-                    <label className="text-xs font-bold text-white/70 uppercase tracking-wider ml-1">Visibility</label>
-                    <button 
-                        onClick={() => setIsPublic(!isPublic)}
-                        className={`flex items-center justify-between px-3 py-2 rounded-lg border transition-all ${isPublic ? 'bg-green-500/20 border-green-500/50 text-green-100' : 'bg-white/5 border-white/10 text-white/60'}`}
-                    >
-                        <span className="text-xs font-bold flex items-center gap-2">
-                            {isPublic ? <Globe size={14} /> : <Lock size={14} />}
-                            {isPublic ? 'Public Feed' : 'Private'}
-                        </span>
-                        <div className={`w-8 h-4 rounded-full relative transition-colors ${isPublic ? 'bg-green-500' : 'bg-gray-600'}`}>
-                            <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all shadow-sm ${isPublic ? 'left-4.5' : 'left-0.5'}`} style={{ left: isPublic ? '18px' : '2px' }} />
-                        </div>
-                    </button>
+                <div className="flex flex-col gap-4 min-w-[160px]">
+                    {/* Public Toggle */}
+                    <div className="flex flex-col gap-1">
+                        <label className="text-xs font-bold text-white/70 uppercase tracking-wider ml-1">Visibility</label>
+                        <button 
+                            onClick={() => setIsPublic(!isPublic)}
+                            className={`flex items-center justify-between px-3 py-2 rounded-lg border transition-all ${isPublic ? 'bg-green-500/20 border-green-500/50 text-green-100' : 'bg-white/5 border-white/10 text-white/60'}`}
+                        >
+                            <span className="text-xs font-bold flex items-center gap-2">
+                                {isPublic ? <Globe size={14} /> : <Lock size={14} />}
+                                {isPublic ? 'Public Feed' : 'Private'}
+                            </span>
+                            <div className={`w-8 h-4 rounded-full relative transition-colors ${isPublic ? 'bg-green-500' : 'bg-gray-600'}`}>
+                                <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all shadow-sm ${isPublic ? 'left-4.5' : 'left-0.5'}`} style={{ left: isPublic ? '18px' : '2px' }} />
+                            </div>
+                        </button>
+                    </div>
+
+                    {/* Time Capsule Toggle */}
+                     <div className="flex flex-col gap-1">
+                        <label className="text-xs font-bold text-white/70 uppercase tracking-wider ml-1 flex items-center gap-1">
+                            Schedule <Clock size={10} />
+                        </label>
+                        <button 
+                            onClick={() => setIsTimeCapsule(!isTimeCapsule)}
+                            className={`flex items-center justify-between px-3 py-2 rounded-lg border transition-all ${isTimeCapsule ? 'bg-blue-500/20 border-blue-500/50 text-blue-100' : 'bg-white/5 border-white/10 text-white/60'}`}
+                        >
+                            <span className="text-xs font-bold flex items-center gap-2">
+                                <Calendar size={14} />
+                                Time Capsule
+                            </span>
+                            <div className={`w-8 h-4 rounded-full relative transition-colors ${isTimeCapsule ? 'bg-blue-500' : 'bg-gray-600'}`}>
+                                <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all shadow-sm ${isTimeCapsule ? 'left-4.5' : 'left-0.5'}`} style={{ left: isTimeCapsule ? '18px' : '2px' }} />
+                            </div>
+                        </button>
+                        
+                        {isTimeCapsule && (
+                             <motion.div 
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                className="mt-1"
+                             >
+                                <input 
+                                    type="datetime-local"
+                                    value={unlockDate}
+                                    onChange={(e) => setUnlockDate(e.target.value)}
+                                    className="w-full bg-white/10 border border-white/20 rounded-lg px-2 py-1.5 text-xs text-white color-scheme-dark"
+                                />
+                                <p className="text-[10px] text-white/50 mt-1 pl-1">Letter stays locked until this date</p>
+                             </motion.div>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -383,7 +442,10 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
                              <p className="text-white/60 text-xs uppercase tracking-widest mb-3 font-bold">Share via</p>
                              <SocialShare 
                                 url={generatedLink} 
-                                message="I wrote a special secret note for you 💌✨ Tap to reveal:" 
+                                message={isTimeCapsule 
+                                    ? `I sent you a special Time Capsule 🎁⏳ It unlocks on ${new Date(unlockDate).toLocaleDateString()}. Tap to wait:`
+                                    : "I wrote a special secret note for you 💌✨ Tap to reveal:"
+                                }
                              />
                         </div>
                     </div>

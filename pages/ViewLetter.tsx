@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Eye, Heart } from 'lucide-react';
+import { ArrowLeft, Eye, Heart, Lock, Clock, Gift } from 'lucide-react';
 import { LetterData, ThemeType } from '../types';
 import { THEMES } from '../constants';
 import { incrementViewCount, toggleLike } from '../services/firebase';
@@ -24,12 +24,40 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
   const [viewCount, setViewCount] = useState(data.views || 0);
   const [likesCount, setLikesCount] = useState(data.likes || 0);
   const [isLiked, setIsLiked] = useState(false);
+  
+  // Time Capsule State
+  const [isLocked, setIsLocked] = useState(false);
+  const [timeLeft, setTimeLeft] = useState<{days: number, hours: number, mins: number, secs: number} | null>(null);
 
   useEffect(() => {
     if (data?.recipientName) {
       document.title = `💌 For ${data.recipientName} | LoveNotes`;
     } else {
       document.title = "You have a new message 💌";
+    }
+    
+    // Check Lock Status
+    if (data.unlockDate) {
+        const unlockTime = new Date(data.unlockDate).getTime();
+        if (Date.now() < unlockTime) {
+            setIsLocked(true);
+            const updateTimer = () => {
+                const now = Date.now();
+                const diff = unlockTime - now;
+                if (diff <= 0) {
+                    setIsLocked(false);
+                    return;
+                }
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const secs = Math.floor((diff % (1000 * 60)) / 1000);
+                setTimeLeft({ days, hours, mins, secs });
+            };
+            updateTimer();
+            const interval = setInterval(updateTimer, 1000);
+            return () => clearInterval(interval);
+        }
     }
   }, [data]);
 
@@ -43,7 +71,7 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
         }
         if (src) setMusicSrc(src);
 
-        if (data.id && !onBack) {
+        if (data.id && !onBack && !isLocked) {
             incrementViewCount(data.id);
             setViewCount((v) => v + 1);
             
@@ -52,9 +80,14 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
             setIsLiked(likedSet.has(data.id));
         }
     }
-  }, [data, onBack]);
+  }, [data, onBack, isLocked]);
 
   const handleOpen = () => {
+    if (isLocked) {
+        showToast("This Time Capsule is still locked! 🔒", "info");
+        // Shake animation triggering logic could go here
+        return;
+    }
     setStep('OPENING');
     setTimeout(() => fireConfetti(), 500);
     setTimeout(() => setStep('READING'), 2500);
@@ -111,7 +144,7 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
         confetti({
             particleCount: 15,
             spread: 60,
-            origin: { x: 0.5, y: 0.5 }, // Approximate center since this is full screen view
+            origin: { x: 0.5, y: 0.5 },
             colors: ['#ef4444', '#f472b6', '#ffffff'],
             scalar: 0.8
         });
@@ -127,6 +160,7 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
   };
 
   const theme = THEMES[data.theme || ThemeType.VELVET];
+  const isWinter = data.theme === ThemeType.WINTER;
 
   return (
     <div className={`min-h-screen relative overflow-hidden flex flex-col items-center justify-center ${theme.bgGradient}`}>
@@ -172,48 +206,112 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
         <AnimatePresence mode="wait">
             {step !== 'READING' && (
                 <motion.div
-                    key="envelope-group"
+                    key="closed-container"
                     initial={{ scale: 0.8, opacity: 0, y: 100 }}
                     animate={{ scale: 1, opacity: 1, y: 0 }}
                     exit={{ scale: 1.5, opacity: 0, y: 200, transition: { duration: 0.8 } }}
                     className="relative w-[340px] md:w-[450px] cursor-pointer"
-                    onClick={step === 'CLOSED' ? handleOpen : undefined}
+                    onClick={handleOpen}
                 >
-                    <div className={`relative h-[240px] md:h-[300px] ${theme.envelopeColor} rounded-b-xl shadow-2xl flex flex-col items-center justify-center z-20`}>
-                        <motion.div 
-                            className={`absolute w-[90%] h-[90%] ${theme.paperColor} rounded-lg shadow-md z-10 flex flex-col p-6 items-center`}
-                            initial={{ y: 0 }}
-                            animate={step === 'OPENING' ? { y: -200, zIndex: 0 } : { y: 0 }}
-                            transition={{ duration: 1.5, ease: "easeInOut", delay: 0.3 }}
-                        >
-                             <div className="w-full h-full opacity-30 overflow-hidden text-[6px] md:text-[8px] leading-relaxed select-none">
-                                {data.content}
-                             </div>
-                        </motion.div>
-                        <div className={`absolute inset-0 z-30 pointer-events-none rounded-b-xl border-t border-white/10 ${theme.envelopeColor}`} 
-                             style={{ clipPath: 'polygon(0 0, 50% 40%, 100% 0, 100% 100%, 0 100%)' }}>
+                    {isLocked ? (
+                         // LOCKED STATE
+                         <div className="flex flex-col items-center">
+                            <motion.div 
+                                animate={{ rotate: [0, -5, 5, -5, 5, 0] }}
+                                transition={{ repeat: Infinity, duration: 2, repeatDelay: 1 }}
+                                className="bg-black/40 backdrop-blur-xl border border-white/20 p-8 rounded-3xl text-center shadow-2xl"
+                            >
+                                <Lock size={48} className="text-white mx-auto mb-4" />
+                                <h2 className="text-2xl font-cinematic text-white mb-2">Time Capsule</h2>
+                                <p className="text-white/60 text-sm mb-6">This message is locked until {new Date(data.unlockDate!).toLocaleDateString()}</p>
+                                
+                                {timeLeft && (
+                                    <div className="grid grid-cols-4 gap-4 text-white">
+                                        <div className="flex flex-col">
+                                            <span className="text-2xl font-bold font-mono">{timeLeft.days}</span>
+                                            <span className="text-[10px] uppercase opacity-50">Days</span>
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-2xl font-bold font-mono">{timeLeft.hours}</span>
+                                            <span className="text-[10px] uppercase opacity-50">Hrs</span>
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-2xl font-bold font-mono">{timeLeft.mins}</span>
+                                            <span className="text-[10px] uppercase opacity-50">Mins</span>
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-2xl font-bold font-mono">{timeLeft.secs}</span>
+                                            <span className="text-[10px] uppercase opacity-50">Secs</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </motion.div>
+                         </div>
+                    ) : isWinter ? (
+                        // WINTER THEME GIFT BOX
+                         <div className="relative w-[280px] h-[280px] md:w-[320px] md:h-[320px] flex items-center justify-center">
+                            {/* Box Body */}
+                            <div className="absolute inset-x-0 bottom-0 h-[240px] bg-red-700 rounded-lg shadow-2xl flex items-center justify-center z-10 border border-white/10">
+                                <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-16 bg-red-900/50" />
+                                <Gift size={64} className="text-white/20" />
+                            </div>
+                            
+                            {/* Box Lid (Animates Off) */}
+                            <motion.div 
+                                animate={step === 'OPENING' ? { y: -300, rotate: -10, opacity: 0 } : { y: 0 }}
+                                transition={{ duration: 1, ease: 'easeInOut' }}
+                                className="absolute top-0 inset-x-[-10px] h-[60px] bg-red-800 rounded-lg shadow-xl z-20 border-b-4 border-black/20"
+                            >
+                                <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-16 bg-yellow-400 shadow-sm" />
+                                {/* Bow */}
+                                <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-32 h-16">
+                                     <div className="absolute left-0 w-16 h-16 rounded-full border-[8px] border-yellow-400 rotate-45 rounded-tl-none border-b-transparent border-r-transparent" />
+                                     <div className="absolute right-0 w-16 h-16 rounded-full border-[8px] border-yellow-400 -rotate-45 rounded-tr-none border-b-transparent border-l-transparent" />
+                                     <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-yellow-400 rounded-full shadow-md" />
+                                </div>
+                            </motion.div>
+                            
+                            <p className="absolute -bottom-12 w-full text-center text-white/70 animate-pulse text-sm">Tap to Unwrap</p>
+                         </div>
+                    ) : (
+                        // STANDARD ENVELOPE
+                        <div className={`relative h-[240px] md:h-[300px] ${theme.envelopeColor} rounded-b-xl shadow-2xl flex flex-col items-center justify-center z-20`}>
+                            <motion.div 
+                                className={`absolute w-[90%] h-[90%] ${theme.paperColor} rounded-lg shadow-md z-10 flex flex-col p-6 items-center`}
+                                initial={{ y: 0 }}
+                                animate={step === 'OPENING' ? { y: -200, zIndex: 0 } : { y: 0 }}
+                                transition={{ duration: 1.5, ease: "easeInOut", delay: 0.3 }}
+                            >
+                                <div className="w-full h-full opacity-30 overflow-hidden text-[6px] md:text-[8px] leading-relaxed select-none">
+                                    {data.content}
+                                </div>
+                            </motion.div>
+                            <div className={`absolute inset-0 z-30 pointer-events-none rounded-b-xl border-t border-white/10 ${theme.envelopeColor}`} 
+                                style={{ clipPath: 'polygon(0 0, 50% 40%, 100% 0, 100% 100%, 0 100%)' }}>
+                            </div>
+                            <div className="absolute bottom-10 z-40 text-white/90 text-center font-elegant">
+                                <p className="text-xs uppercase tracking-widest opacity-60 mb-1">For</p>
+                                <h2 className="text-2xl italic font-serif">{data.recipientName}</h2>
+                            </div>
+                            
+                            {/* Envelope Flap */}
+                            <motion.div
+                                className={`absolute top-[-1px] left-0 w-full h-[120px] md:h-[150px] ${theme.envelopeColor} z-30 rounded-t-xl origin-top border-b border-black/10`}
+                                style={{ clipPath: 'polygon(0 0, 100% 0, 50% 100%)', backfaceVisibility: 'visible' }}
+                                initial={{ rotateX: 0 }}
+                                animate={step === 'OPENING' ? { rotateX: 180, zIndex: 0 } : { rotateX: 0 }}
+                                transition={{ duration: 0.6, ease: "easeInOut" }}
+                            >
+                                <motion.div 
+                                    animate={step === 'OPENING' ? { opacity: 0 } : { opacity: 1 }}
+                                    className="absolute top-[90%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-red-800 rounded-full border-2 border-red-900 shadow-md flex items-center justify-center text-[8px] text-red-200 font-bold"
+                                >
+                                    LOVE
+                                </motion.div>
+                            </motion.div>
+                            
+                            <p className="absolute -bottom-12 w-full text-center text-white/70 animate-pulse text-sm">Tap to Open</p>
                         </div>
-                        <div className="absolute bottom-10 z-40 text-white/90 text-center font-elegant">
-                             <p className="text-xs uppercase tracking-widest opacity-60 mb-1">For</p>
-                             <h2 className="text-2xl italic font-serif">{data.recipientName}</h2>
-                        </div>
-                    </div>
-                    <motion.div
-                        className={`absolute top-0 left-0 w-full h-[120px] md:h-[150px] ${theme.envelopeColor} z-30 rounded-t-xl origin-top border-b border-black/10`}
-                        style={{ clipPath: 'polygon(0 0, 100% 0, 50% 100%)', backfaceVisibility: 'visible' }}
-                        initial={{ rotateX: 0 }}
-                        animate={step === 'OPENING' ? { rotateX: 180, zIndex: 0 } : { rotateX: 0 }}
-                        transition={{ duration: 0.6, ease: "easeInOut" }}
-                    >
-                        <motion.div 
-                            animate={step === 'OPENING' ? { opacity: 0 } : { opacity: 1 }}
-                            className="absolute top-[90%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-red-800 rounded-full border-2 border-red-900 shadow-md flex items-center justify-center text-[8px] text-red-200 font-bold"
-                        >
-                            LOVE
-                        </motion.div>
-                    </motion.div>
-                    {step === 'CLOSED' && (
-                        <p className="absolute -bottom-12 w-full text-center text-white/70 animate-pulse text-sm">Tap to Open</p>
                     )}
                 </motion.div>
             )}

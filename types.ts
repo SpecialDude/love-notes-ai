@@ -7,7 +7,8 @@ export enum ThemeType {
   PASTEL = 'PASTEL',      // Cute/Playful
   VINTAGE = 'VINTAGE',    // Old School/Typewriter
   OCEAN = 'OCEAN',        // Calm/Deep Blue
-  SUNSET = 'SUNSET'       // Warm/Energetic
+  SUNSET = 'SUNSET',      // Warm/Energetic
+  WINTER = 'WINTER'       // Christmas/Holiday
 }
 
 export enum RelationshipType {
@@ -45,8 +46,9 @@ export interface LetterData {
   date: string;
   isPublic: boolean;
   views: number;
-  likes: number; // Added likes count
+  likes: number; 
   musicUrl?: string;
+  unlockDate?: string; // ISO String for Time Capsule
 }
 
 export interface GeminiResponse {
