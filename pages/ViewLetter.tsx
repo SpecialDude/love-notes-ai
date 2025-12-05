@@ -92,8 +92,8 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
     // Confetti timing depends on animation type (Gift vs Envelope)
     const isHoliday = THEMES[data.theme].category === 'HOLIDAY';
     // Slower timing for dramatic effect
-    const confettiDelay = isHoliday ? 4000 : 3000; 
-    const readDelay = isHoliday ? 6000 : 4500;
+    const confettiDelay = isHoliday ? 4500 : 3000; 
+    const readDelay = isHoliday ? 6500 : 4500;
 
     setTimeout(() => fireConfetti(), confettiDelay); 
     setTimeout(() => setStep('READING'), readDelay); 
@@ -331,36 +331,41 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
                              <p className="absolute -bottom-16 w-full text-center text-white/80 animate-pulse font-bold tracking-widest text-sm uppercase">Tap to Unwrap</p>
                         </div>
                     ) : (
-                        // STANDARD ENVELOPE (Precise Z-Indexing)
+                        // STANDARD ENVELOPE (Precise Z-Indexing & Sizing)
                         <div className={`relative h-[220px] md:h-[260px] w-[300px] md:w-[350px] flex flex-col items-center justify-center`}>
                             
                             {/* 1. Envelope Back Face (z-10) */}
                             <div className={`absolute inset-0 rounded-b-lg ${theme.envelopeColor} brightness-75 z-10 shadow-lg`}></div>
 
-                            {/* 2. The Letter Inside (z-15) - Sandwiched and Pushed Deep */}
+                            {/* 2. The Letter Inside (z-15) - SMALLER & HIDDEN DEEP */}
                             <motion.div 
-                                className={`absolute w-[90%] h-[85%] ${theme.paperColor} rounded-sm shadow-md flex flex-col p-6 items-center border border-black/5`}
-                                initial={{ y: 100, zIndex: 15, opacity: 0 }} // Start DEEP and behind pocket
+                                className={`absolute w-[90%] h-[180px] ${theme.paperColor} rounded-sm shadow-md flex flex-col p-4 items-center border border-black/5 bottom-0`}
+                                initial={{ opacity: 0 }}
                                 animate={step === 'OPENING' ? { 
                                     y: -300, 
-                                    scale: 1.1,
-                                    rotate: [0, -2, 2, 0],
+                                    scale: 1.5, // Expand to full size
                                     opacity: 1,
+                                    rotate: [0, -1, 1, 0],
                                     zIndex: 50, // Moves to top ONLY after leaving
                                     transition: { 
-                                        opacity: { duration: 0.2 },
-                                        y: { duration: 2.0, ease: "easeInOut", delay: 1.2 }, // Wait for flap
+                                        opacity: { duration: 0.1 },
+                                        y: { duration: 2.0, ease: "easeInOut", delay: 1.0 }, // Wait for flap
                                         scale: { duration: 1.5, delay: 1.2 },
-                                        zIndex: { delay: 2.5 } // STRICT DELAY: Ensure it cleared the envelope
+                                        zIndex: { delay: 2.0 } // STRICT DELAY: Ensure it cleared the envelope
                                     } 
-                                } : { opacity: 1, y: 100, zIndex: 15 }}
+                                } : { opacity: 1, zIndex: 15 }}
+                                style={{ zIndex: 15 }}
                             >
-                                <div className="w-full h-full opacity-30 overflow-hidden text-[6px] md:text-[8px] leading-relaxed select-none">
-                                    {data.content}
+                                {/* Fake text lines for visual effect when folded */}
+                                <div className="w-full h-full opacity-30 flex flex-col gap-2 pt-2">
+                                     <div className="w-1/2 h-1 bg-black/20 rounded self-center mb-4"></div>
+                                     <div className="w-full h-0.5 bg-black/20 rounded"></div>
+                                     <div className="w-full h-0.5 bg-black/20 rounded"></div>
+                                     <div className="w-3/4 h-0.5 bg-black/20 rounded"></div>
                                 </div>
                             </motion.div>
 
-                            {/* 3. Envelope Pocket (z-30) */}
+                            {/* 3. Envelope Pocket (z-30) - Covers the letter */}
                             <div className={`absolute inset-0 z-30 pointer-events-none rounded-b-lg border-t border-black/10 ${theme.envelopeColor} shadow-inner`} 
                                 style={{ clipPath: 'polygon(0 0, 50% 55%, 100% 0, 100% 100%, 0 100%)' }}>
                             </div>
@@ -370,13 +375,13 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
                                 <h2 className="text-3xl italic font-serif truncate drop-shadow-md">{data.recipientName}</h2>
                             </div>
                             
-                            {/* 4. Envelope Flap (z-40) */}
+                            {/* 4. Envelope Flap (z-40) - Covers top gap */}
                             <motion.div
-                                className={`absolute top-[-1px] left-0 w-full h-[55%] ${theme.envelopeColor} z-40 rounded-t-lg origin-top border-b border-black/20 brightness-90`}
+                                className={`absolute top-0 left-0 w-full h-[56%] ${theme.envelopeColor} z-40 rounded-t-lg origin-top border-b border-black/20 brightness-90`}
                                 style={{ clipPath: 'polygon(0 0, 100% 0, 50% 100%)', backfaceVisibility: 'visible' }}
                                 initial={{ rotateX: 0 }}
                                 animate={step === 'OPENING' ? { rotateX: 180, zIndex: 0 } : { rotateX: 0 }}
-                                transition={{ duration: 1.0, ease: "easeInOut" }}
+                                transition={{ duration: 0.8, ease: "easeInOut" }}
                             >
                                 <motion.div 
                                     animate={step === 'OPENING' ? { opacity: 0 } : { opacity: 1 }}
