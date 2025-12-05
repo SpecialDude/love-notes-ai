@@ -17,7 +17,7 @@ interface Props {
   onBack?: () => void;
 }
 
-// --- COMPONENT 1: STANDARD ENVELOPE (Restored Stable Version) ---
+// --- COMPONENT 1: STANDARD ENVELOPE (Legacy Implementation + Glow) ---
 const StandardEnvelope: React.FC<{ data: LetterData, onOpen: () => void, step: string }> = ({ data, onOpen, step }) => {
     const theme = THEMES[data.theme || ThemeType.VELVET];
     
@@ -30,44 +30,42 @@ const StandardEnvelope: React.FC<{ data: LetterData, onOpen: () => void, step: s
             className="relative w-[340px] md:w-[450px] cursor-pointer"
             onClick={step === 'CLOSED' ? onOpen : undefined}
         >
-            {/* The Envelope Body */}
             <div className={`relative h-[240px] md:h-[300px] ${theme.envelopeColor} rounded-b-xl shadow-2xl flex flex-col items-center justify-center z-20`}>
-                
-                {/* The Letter Inside (Starts small and tucked in) */}
+                {/* The Letter (Legacy Logic: z-10, y:0 -> y:-200) */}
                 <motion.div 
-                    className={`absolute w-[90%] h-[180px] ${theme.paperColor} rounded-lg shadow-md z-[15] flex flex-col p-4 items-center`}
-                    initial={{ y: 0, scale: 0.9 }}
+                    className={`absolute w-[90%] h-[90%] ${theme.paperColor} rounded-lg shadow-md z-10 flex flex-col p-6 items-center`}
+                    initial={{ y: 0 }}
                     animate={step === 'OPENING' ? { 
-                        y: -300, 
-                        scale: 1,
-                        boxShadow: "0 0 50px rgba(255,255,255,0.6)"
-                    } : { y: 0, scale: 0.9 }}
-                    transition={{ duration: 1.5, ease: "easeInOut", delay: 0.8 }}
+                        y: -200, 
+                        zIndex: 0, // Moves behind as it exits in legacy code, but we want it visible
+                        boxShadow: "0 0 50px rgba(255,255,255,0.8)" // THE GLOW UPDATE
+                    } : { y: 0 }}
+                    transition={{ duration: 1.5, ease: "easeInOut", delay: 0.3 }}
                 >
-                     <div className="w-full h-full opacity-40 overflow-hidden text-[6px] md:text-[8px] leading-relaxed select-none text-black">
+                     <div className="w-full h-full opacity-30 overflow-hidden text-[6px] md:text-[8px] leading-relaxed select-none text-black">
                         {data.content}
                      </div>
                 </motion.div>
-
-                {/* The Front Pocket (Covers the bottom half of letter) */}
+                
+                {/* Pocket */}
                 <div className={`absolute inset-0 z-30 pointer-events-none rounded-b-xl border-t border-white/10 ${theme.envelopeColor}`} 
                      style={{ clipPath: 'polygon(0 0, 50% 40%, 100% 0, 100% 100%, 0 100%)' }}>
                 </div>
-
+                
                 {/* Front Text */}
-                <div className="absolute bottom-10 z-30 text-white/90 text-center font-elegant pointer-events-none">
+                <div className="absolute bottom-10 z-40 text-white/90 text-center font-elegant pointer-events-none">
                      <p className="text-xs uppercase tracking-widest opacity-60 mb-1">For</p>
                      <h2 className="text-2xl italic font-serif">{data.recipientName}</h2>
                 </div>
             </div>
-
-            {/* The Flap (Opens first) */}
+            
+            {/* Flap */}
             <motion.div
-                className={`absolute top-0 left-0 w-full h-[120px] md:h-[150px] ${theme.envelopeColor} z-40 rounded-t-xl origin-top border-b border-black/10`}
+                className={`absolute top-0 left-0 w-full h-[120px] md:h-[150px] ${theme.envelopeColor} z-30 rounded-t-xl origin-top border-b border-black/10`}
                 style={{ clipPath: 'polygon(0 0, 100% 0, 50% 100%)', backfaceVisibility: 'visible' }}
                 initial={{ rotateX: 0 }}
-                animate={step === 'OPENING' ? { rotateX: 180, zIndex: 1 } : { rotateX: 0 }}
-                transition={{ duration: 0.8, ease: "easeInOut" }}
+                animate={step === 'OPENING' ? { rotateX: 180, zIndex: 0 } : { rotateX: 0 }}
+                transition={{ duration: 0.6, ease: "easeInOut" }}
             >
                 <motion.div 
                     animate={step === 'OPENING' ? { opacity: 0 } : { opacity: 1 }}
@@ -76,8 +74,7 @@ const StandardEnvelope: React.FC<{ data: LetterData, onOpen: () => void, step: s
                     LOVE
                 </motion.div>
             </motion.div>
-
-            {/* Tap Hint */}
+            
             {step === 'CLOSED' && (
                 <p className="absolute -bottom-12 w-full text-center text-white/70 animate-pulse text-sm">Tap to Open</p>
             )}
@@ -108,7 +105,7 @@ const HolidayGiftBox: React.FC<{ data: LetterData, onOpen: () => void, step: str
                     rotateY: 360,
                     zIndex: 50,
                     boxShadow: "0 0 40px rgba(255,215,0, 0.6)", // Gold glow
-                    transition: { duration: 2.0, ease: "backOut", delay: 2.5 } // Starts AFTER Lid
+                    transition: { duration: 2.0, ease: "backOut", delay: 1.5 } 
                 } : { zIndex: 10 }}
                 >
                 <div className="text-[6px] opacity-40 overflow-hidden h-full text-black leading-relaxed">
@@ -139,7 +136,7 @@ const HolidayGiftBox: React.FC<{ data: LetterData, onOpen: () => void, step: str
                     y: -150, 
                     rotateX: -180, 
                     opacity: 0,
-                    transition: { duration: 1.2, ease: "circIn", delay: 1.6 } // Strict Delay
+                    transition: { duration: 1.2, ease: "circIn", delay: 0.6 }
                 } : { 
                     y: [0, -3, 0], // Idle bounce
                 }}
@@ -248,22 +245,20 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
     }
     setStep('OPENING');
     
-    // Determine Delay based on theme category (Gift takes longer)
     const isHoliday = THEMES[data.theme].category === ThemeCategory.HOLIDAY;
     
-    // Delays sync with CSS animations
-    const confettiDelay = isHoliday ? 4000 : 2500; 
-    const readDelay = isHoliday ? 5500 : 3500;
+    // Adjust timing based on type
+    const confettiDelay = isHoliday ? 2500 : 500;
+    const readDelay = isHoliday ? 4000 : 2500;
 
-    setTimeout(() => fireConfetti(), confettiDelay); 
-    setTimeout(() => setStep('READING'), readDelay); 
+    setTimeout(() => fireConfetti(), confettiDelay);
+    setTimeout(() => setStep('READING'), readDelay);
   };
 
   const fireConfetti = () => {
     const themeColors = data.theme === ThemeType.NOIR ? ['#000', '#555'] : ['#ff4d4d', '#ff9a9e', '#ffd1dc'];
     if (data.theme === ThemeType.HOLLY) { themeColors.push('#15803d'); themeColors.push('#b91c1c'); themeColors.push('#fbbf24'); }
-    if (data.theme === ThemeType.WINTER || data.theme === ThemeType.FROST) { themeColors.push('#ffffff'); themeColors.push('#bae6fd'); }
-
+    
     const duration = 3500;
     const end = Date.now() + duration;
 
@@ -326,7 +321,7 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
 
   const theme = THEMES[data.theme || ThemeType.VELVET];
   const isHoliday = theme.category === ThemeCategory.HOLIDAY;
-  
+
   return (
     <div className={`min-h-screen relative overflow-hidden flex flex-col items-center justify-center ${theme.bgGradient}`}>
       <AnimatedBackground theme={data.theme} />
@@ -345,7 +340,7 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
       </div>
 
       {step === 'READING' && (
-          <div className="fixed top-6 right-6 z-50 flex items-center gap-2 animate-in fade-in duration-1000">
+          <div className="fixed top-6 right-6 z-50 flex items-center gap-2">
                {data.id && !onBack && (
                   <motion.button 
                     whileTap={{ scale: 0.8 }}
@@ -371,7 +366,7 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
             {step !== 'READING' && (
                 <div className="relative">
                     {isLocked ? (
-                         // LOCKED STATE (TIME CAPSULE)
+                         // LOCKED (TIME CAPSULE)
                          <motion.div 
                             initial={{ scale: 0.8, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
@@ -385,7 +380,7 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
                             >
                                 <Lock size={48} className="text-white mx-auto mb-4" />
                                 <h2 className="text-2xl font-cinematic text-white mb-2">Time Capsule</h2>
-                                <p className="text-white/60 text-sm mb-6">This message is locked until {new Date(data.unlockDate!).toLocaleDateString()}</p>
+                                <p className="text-white/60 text-sm mb-6">Locked until {new Date(data.unlockDate!).toLocaleDateString()}</p>
                                 
                                 {timeLeft && (
                                     <div className="grid grid-cols-4 gap-4 text-white">
@@ -410,10 +405,10 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
                             </motion.div>
                          </motion.div>
                     ) : isHoliday ? (
-                        // HOLIDAY THEMES -> GIFT BOX
+                        // HOLIDAY THEMES
                         <HolidayGiftBox data={data} onOpen={handleOpen} step={step} />
                     ) : (
-                        // STANDARD THEMES -> ENVELOPE (RESTORED)
+                        // STANDARD ENVELOPE (LEGACY)
                         <StandardEnvelope data={data} onOpen={handleOpen} step={step} />
                     )}
                 </div>
@@ -428,13 +423,14 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
                     className="relative z-50 w-full max-w-2xl px-4 flex justify-center"
                 >
                     <div className={`relative ${theme.paperColor} p-8 md:p-12 w-full max-h-[80vh] overflow-y-auto custom-scrollbar shadow-[0_20px_60px_rgba(0,0,0,0.5)] ${theme.textColor} paper-texture flex flex-col rounded-sm ring-1 ring-black/5`}>
-                        {/* Stamp */}
-                        <div className="absolute top-6 right-6 w-20 h-24 border-4 border-double border-current opacity-30 -rotate-6 flex items-center justify-center">
+                        {/* Stamp - Position updated for Mobile */}
+                        <div className="absolute top-4 right-4 md:top-6 md:right-6 w-20 h-24 border-4 border-double border-current opacity-30 -rotate-6 flex items-center justify-center">
                             <div className="text-[10px] font-bold uppercase text-center leading-tight">LoveNotes<br/>Air Mail</div>
                         </div>
 
                         <div className="flex-1 flex flex-col relative z-10">
-                            <div className="mb-8 opacity-60 text-xs font-serif uppercase tracking-widest border-b border-current pb-4 shrink-0 w-fit">
+                            {/* Date - Aligned Left on Mobile */}
+                            <div className="mb-8 opacity-60 text-xs font-serif uppercase tracking-widest text-left md:text-center border-b border-current pb-4 shrink-0 w-fit mx-0 md:mx-auto">
                                 {new Date(data.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                             </div>
                             <h1 className={`text-4xl md:text-5xl mb-8 ${theme.fontFamily} font-bold shrink-0 leading-tight`}>My Dearest {data.recipientName},</h1>
