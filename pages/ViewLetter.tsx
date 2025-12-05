@@ -89,11 +89,12 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
     }
     setStep('OPENING');
     
-    // Confetti timing depends on animation type
-    const confettiDelay = THEMES[data.theme].category === 'HOLIDAY' ? 800 : 300;
+    // Confetti timing depends on animation type (Gift vs Envelope)
+    const isHoliday = THEMES[data.theme].category === 'HOLIDAY';
+    const confettiDelay = isHoliday ? 1400 : 600; // Gift box takes longer to open
     
     setTimeout(() => fireConfetti(), confettiDelay); 
-    setTimeout(() => setStep('READING'), 2500); // Wait for full sequence
+    setTimeout(() => setStep('READING'), isHoliday ? 3000 : 2000); 
   };
 
   const fireConfetti = () => {
@@ -166,10 +167,13 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
   };
 
   const theme = THEMES[data.theme || ThemeType.VELVET];
-  // Box colors based on theme
-  const boxColor = theme.category === 'HOLIDAY' ? theme.envelopeColor : theme.envelopeColor;
-  const ribbonColor = theme.category === 'HOLIDAY' ? 'bg-yellow-400' : 'bg-white/80';
-  const boxShadow = theme.category === 'HOLIDAY' ? 'shadow-[0_20px_50px_rgba(220,38,38,0.4)]' : 'shadow-2xl';
+  const isHoliday = theme.category === 'HOLIDAY';
+  
+  // Box Styling
+  const boxBaseColor = theme.envelopeColor;
+  const boxLidColor = theme.envelopeColor.replace('800', '700').replace('900', '800'); // Slightly lighter for lid
+  const ribbonColor = 'bg-yellow-400';
+  const ribbonShadow = 'shadow-md';
 
   return (
     <div className={`min-h-screen relative overflow-hidden flex flex-col items-center justify-center ${theme.bgGradient}`}>
@@ -256,98 +260,100 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
                                 )}
                             </motion.div>
                          </div>
-                    ) : theme.category === 'HOLIDAY' ? (
-                        // 3D GIFT BOX (Sequenced)
-                        <div className="relative w-[240px] h-[240px] md:w-[280px] md:h-[280px] preserve-3d transform-style-3d hover:scale-105 transition-transform duration-300">
+                    ) : isHoliday ? (
+                        // 3D GIFT BOX (Improved Visuals & Strictly Sequenced)
+                        <div className="relative w-[260px] h-[260px] preserve-3d transform-style-3d hover:scale-105 transition-transform duration-300">
                              
-                             {/* The Letter inside (Starts hidden/compressed) */}
+                             {/* --- LAYER 1: The Letter (Starts Inside) --- */}
                              <motion.div 
-                                className={`absolute left-[10%] top-[10%] w-[80%] h-[80%] ${theme.paperColor} rounded-md shadow-lg z-10 flex items-center justify-center p-4`}
+                                className={`absolute left-[10%] top-[10%] w-[80%] h-[80%] ${theme.paperColor} rounded-sm shadow-lg z-10 flex items-center justify-center p-4`}
                                 initial={{ y: 0, scale: 0.9, opacity: 0 }}
                                 animate={step === 'OPENING' ? { 
-                                    y: -350, 
+                                    y: -300, 
                                     scale: 1, 
                                     opacity: 1,
                                     rotateY: 360,
-                                    transition: { duration: 1.5, ease: "backOut", delay: 1.0 } // Starts AFTER lid opens
+                                    boxShadow: "0 0 40px rgba(255,255,255,0.6)", // Glow
+                                    transition: { duration: 1.5, ease: "backOut", delay: 1.2 } // Starts LAST
                                 } : {}}
                              >
+                                {/* Text preview logic */}
                                 <div className="text-[6px] opacity-40 overflow-hidden h-full">
                                     {data.content}
                                 </div>
                              </motion.div>
 
-                             {/* Box Base (Front) */}
-                             <div className={`absolute inset-0 ${boxColor} rounded-xl ${boxShadow} flex items-center justify-center z-20 border-b-4 border-black/10 overflow-hidden`}>
-                                {/* Gradient sheen */}
-                                <div className="absolute inset-0 bg-gradient-to-tr from-black/20 to-white/10 pointer-events-none" />
-                                {/* Vertical Ribbon (Fades out first) */}
+                             {/* --- LAYER 2: Box Base --- */}
+                             <div className={`absolute inset-0 ${boxBaseColor} rounded-sm shadow-2xl flex items-center justify-center z-20 border-t border-white/10`}>
+                                {/* Gradients for 3D look */}
+                                <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/20 pointer-events-none rounded-sm" />
+                                
+                                {/* Vertical Ribbon Base (Slides down/fades) */}
                                 <motion.div 
-                                    className={`absolute h-full w-12 ${ribbonColor} shadow-sm`}
-                                    animate={step === 'OPENING' ? { opacity: 0, scale: 1.5 } : { opacity: 1 }}
-                                    transition={{ duration: 0.5 }}
+                                    className={`absolute h-full w-10 ${ribbonColor} shadow-md`}
+                                    animate={step === 'OPENING' ? { y: 150, opacity: 0 } : { y: 0, opacity: 1 }}
+                                    transition={{ duration: 0.6, ease: "easeIn" }}
                                 />
                              </div>
 
-                             {/* Box Lid (Animates off second) */}
+                             {/* --- LAYER 3: Box Lid --- */}
                              <motion.div 
-                                className={`absolute -top-4 -left-2 w-[110%] h-[60px] ${boxColor} rounded-lg shadow-xl z-30 border-b-2 border-black/10 flex justify-center overflow-visible`}
+                                className={`absolute -top-6 -left-2 w-[110%] h-[70px] ${boxLidColor || boxBaseColor} rounded-md shadow-xl z-30 flex justify-center items-start overflow-visible`}
                                 animate={step === 'OPENING' ? { 
-                                    y: -150, 
-                                    rotateX: -120, 
-                                    rotate: 10,
+                                    y: -100, 
+                                    rotateX: -160, // Flips back
+                                    z: -100,
                                     opacity: 0,
-                                    transition: { duration: 0.8, ease: "circIn", delay: 0.5 } // Starts after ribbon
+                                    transition: { duration: 0.8, ease: "circIn", delay: 0.6 } // Starts AFTER ribbon
                                 } : { 
-                                    y: [0, -2, 0],
-                                    rotate: [0, -1, 1, 0]
+                                    y: [0, -4, 0], // Hover idle
                                 }}
-                                transition={step !== 'OPENING' ? { repeat: Infinity, duration: 4, ease: "easeInOut" } : {}}
+                                transition={step !== 'OPENING' ? { repeat: Infinity, duration: 3, ease: "easeInOut" } : {}}
+                                style={{ transformOrigin: "top" }}
                              >
-                                  {/* Lid sheen */}
-                                  <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent rounded-lg" />
-                                  {/* Vertical Ribbon on Lid */}
+                                  <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-black/10 rounded-md pointer-events-none" />
+                                  
+                                  {/* Ribbon on Lid */}
                                   <motion.div 
-                                    className={`absolute h-full w-12 ${ribbonColor}`} 
+                                    className={`absolute h-full w-10 ${ribbonColor} shadow-sm`} 
                                     animate={step === 'OPENING' ? { opacity: 0 } : { opacity: 1 }}
-                                    transition={{ duration: 0.5 }}
+                                    transition={{ duration: 0.3 }}
                                   />
                                   
-                                  {/* The Bow */}
+                                  {/* THE BOW (Unravels first) */}
                                   <motion.div 
-                                    className="absolute -top-8 w-full flex justify-center items-end"
-                                    animate={step === 'OPENING' ? { scale: 0, opacity: 0 } : { scale: 1, opacity: 1 }}
-                                    transition={{ duration: 0.5 }}
+                                    className="absolute -top-10 w-full flex justify-center items-end"
+                                    animate={step === 'OPENING' ? { scale: 0, opacity: 0, rotate: 45 } : { scale: 1, opacity: 1 }}
+                                    transition={{ duration: 0.5, ease: "backIn" }} // Happens FIRST
                                   >
-                                        {/* Left Loop */}
-                                        <div className={`w-14 h-14 rounded-full border-[6px] border-${ribbonColor.replace('bg-', '')} rotate-45 rounded-br-none bg-transparent absolute -left-1 shadow-sm`} style={{ borderColor: 'inherit' }} />
-                                        {/* Right Loop */}
-                                        <div className={`w-14 h-14 rounded-full border-[6px] border-${ribbonColor.replace('bg-', '')} -rotate-45 rounded-bl-none bg-transparent absolute -right-1 shadow-sm`} style={{ borderColor: 'inherit' }} />
-                                        {/* Center Knot */}
-                                        <div className={`relative z-10 w-8 h-8 rounded-full ${ribbonColor} shadow-md`} />
+                                        <div className={`w-16 h-16 rounded-full border-[8px] border-yellow-400 rotate-45 rounded-br-none absolute -left-2 drop-shadow-md`} />
+                                        <div className={`w-16 h-16 rounded-full border-[8px] border-yellow-400 -rotate-45 rounded-bl-none absolute -right-2 drop-shadow-md`} />
+                                        <div className={`relative z-10 w-8 h-8 rounded-full ${ribbonColor} shadow-inner`} />
                                   </motion.div>
                              </motion.div>
 
                              <p className="absolute -bottom-16 w-full text-center text-white/80 animate-pulse font-bold tracking-widest text-sm uppercase">Tap to Unwrap</p>
                         </div>
                     ) : (
-                        // STANDARD ENVELOPE (Improved Layering)
+                        // STANDARD ENVELOPE (Fixed Layering)
                         <div className={`relative h-[220px] md:h-[260px] w-[300px] md:w-[350px] flex flex-col items-center justify-center z-20`}>
                             
                             {/* 1. Envelope Back Face (Static Background) */}
                             <div className={`absolute inset-0 rounded-b-lg ${theme.envelopeColor} brightness-75 z-10 shadow-lg`}></div>
 
-                            {/* 2. The Letter Inside (Starts inside, flies out) */}
+                            {/* 2. The Letter Inside (Strictly Masked initially) */}
                             <motion.div 
-                                className={`absolute bottom-2 w-[90%] h-[85%] ${theme.paperColor} rounded-sm shadow-md z-20 flex flex-col p-6 items-center border border-black/5`}
+                                className={`absolute bottom-1 w-[90%] h-[90%] ${theme.paperColor} rounded-sm shadow-md z-20 flex flex-col p-6 items-center border border-black/5`}
                                 initial={{ y: 0 }}
                                 animate={step === 'OPENING' ? { 
                                     y: -300, 
                                     scale: 1.1,
                                     rotate: [0, -2, 2, 0],
-                                    zIndex: 50, // Moves above everything once out
+                                    zIndex: 50, // Moves above everything ONLY after leaving the pocket
                                     transition: { duration: 1.0, ease: "easeInOut", delay: 0.3 } 
                                 } : { y: 0 }}
+                                // This clip path ensures the letter is hidden if it's "too tall" for the envelope while closed
+                                style={step !== 'OPENING' ? { clipPath: 'inset(10% 0 0 0)' } : {}}
                             >
                                 <div className="w-full h-full opacity-30 overflow-hidden text-[6px] md:text-[8px] leading-relaxed select-none">
                                     {data.content}
