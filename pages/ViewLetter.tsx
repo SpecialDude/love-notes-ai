@@ -85,16 +85,18 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
   const handleOpen = () => {
     if (isLocked) {
         showToast("This Time Capsule is still locked! 🔒", "info");
-        // Shake animation triggering logic could go here
         return;
     }
     setStep('OPENING');
-    setTimeout(() => fireConfetti(), 500);
-    setTimeout(() => setStep('READING'), 2500);
+    setTimeout(() => fireConfetti(), 300); // Confetti as box opens
+    setTimeout(() => setStep('READING'), 2000); // Wait for fly-out animation
   };
 
   const fireConfetti = () => {
     const themeColors = data.theme === ThemeType.NOIR ? ['#000', '#555'] : ['#ff4d4d', '#ff9a9e', '#ffd1dc'];
+    if (data.theme === ThemeType.HOLLY) { themeColors.push('#15803d'); themeColors.push('#b91c1c'); themeColors.push('#fbbf24'); }
+    if (data.theme === ThemeType.WINTER || data.theme === ThemeType.FROST) { themeColors.push('#ffffff'); themeColors.push('#bae6fd'); }
+
     const duration = 3500;
     const end = Date.now() + duration;
 
@@ -160,7 +162,10 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
   };
 
   const theme = THEMES[data.theme || ThemeType.VELVET];
-  const isWinter = data.theme === ThemeType.WINTER;
+  // Box colors based on theme
+  const boxColor = theme.category === 'HOLIDAY' ? 'bg-red-700' : theme.envelopeColor;
+  const ribbonColor = theme.category === 'HOLIDAY' ? 'bg-yellow-400' : 'bg-white/80';
+  const boxShadow = theme.category === 'HOLIDAY' ? 'shadow-[0_20px_50px_rgba(220,38,38,0.4)]' : 'shadow-2xl';
 
   return (
     <div className={`min-h-screen relative overflow-hidden flex flex-col items-center justify-center ${theme.bgGradient}`}>
@@ -180,7 +185,7 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
       </div>
 
       {step === 'READING' && (
-          <div className="fixed top-6 right-6 z-50 flex items-center gap-2">
+          <div className="fixed top-6 right-6 z-50 flex items-center gap-2 animate-in fade-in duration-1000">
                {/* Like Button */}
                {data.id && !onBack && (
                   <motion.button 
@@ -209,8 +214,8 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
                     key="closed-container"
                     initial={{ scale: 0.8, opacity: 0, y: 100 }}
                     animate={{ scale: 1, opacity: 1, y: 0 }}
-                    exit={{ scale: 1.5, opacity: 0, y: 200, transition: { duration: 0.8 } }}
-                    className="relative w-[340px] md:w-[450px] cursor-pointer"
+                    exit={{ scale: 1.1, opacity: 0, transition: { duration: 0.5 } }}
+                    className="relative cursor-pointer group"
                     onClick={handleOpen}
                 >
                     {isLocked ? (
@@ -247,56 +252,100 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
                                 )}
                             </motion.div>
                          </div>
-                    ) : isWinter ? (
-                        // WINTER THEME GIFT BOX
-                         <div className="relative w-[280px] h-[280px] md:w-[320px] md:h-[320px] flex items-center justify-center">
-                            {/* Box Body */}
-                            <div className="absolute inset-x-0 bottom-0 h-[240px] bg-red-700 rounded-lg shadow-2xl flex items-center justify-center z-10 border border-white/10">
-                                <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-16 bg-red-900/50" />
-                                <Gift size={64} className="text-white/20" />
-                            </div>
-                            
-                            {/* Box Lid (Animates Off) */}
-                            <motion.div 
-                                animate={step === 'OPENING' ? { y: -300, rotate: -10, opacity: 0 } : { y: 0 }}
-                                transition={{ duration: 1, ease: 'easeInOut' }}
-                                className="absolute top-0 inset-x-[-10px] h-[60px] bg-red-800 rounded-lg shadow-xl z-20 border-b-4 border-black/20"
-                            >
-                                <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-16 bg-yellow-400 shadow-sm" />
-                                {/* Bow */}
-                                <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-32 h-16">
-                                     <div className="absolute left-0 w-16 h-16 rounded-full border-[8px] border-yellow-400 rotate-45 rounded-tl-none border-b-transparent border-r-transparent" />
-                                     <div className="absolute right-0 w-16 h-16 rounded-full border-[8px] border-yellow-400 -rotate-45 rounded-tr-none border-b-transparent border-l-transparent" />
-                                     <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-yellow-400 rounded-full shadow-md" />
+                    ) : theme.category === 'HOLIDAY' ? (
+                        // 3D GIFT BOX (Improved)
+                        <div className="relative w-[240px] h-[240px] md:w-[280px] md:h-[280px] preserve-3d transform-style-3d hover:scale-105 transition-transform duration-300">
+                             
+                             {/* The Letter inside (Starts hidden/compressed) */}
+                             <motion.div 
+                                className={`absolute left-[10%] top-[10%] w-[80%] h-[80%] ${theme.paperColor} rounded-md shadow-lg z-10 flex items-center justify-center p-4`}
+                                initial={{ y: 0, scale: 0.9, opacity: 0 }}
+                                animate={step === 'OPENING' ? { 
+                                    y: -300, 
+                                    scale: 1, 
+                                    opacity: 1,
+                                    rotateY: 360,
+                                    transition: { duration: 1.5, ease: "backOut" }
+                                } : {}}
+                             >
+                                <div className="text-[6px] opacity-40 overflow-hidden h-full">
+                                    {data.content}
                                 </div>
-                            </motion.div>
-                            
-                            <p className="absolute -bottom-12 w-full text-center text-white/70 animate-pulse text-sm">Tap to Unwrap</p>
-                         </div>
+                             </motion.div>
+
+                             {/* Box Base (Front) */}
+                             <div className={`absolute inset-0 ${boxColor} rounded-xl ${boxShadow} flex items-center justify-center z-20 border-b-4 border-black/10 overflow-hidden`}>
+                                {/* Gradient sheen */}
+                                <div className="absolute inset-0 bg-gradient-to-tr from-black/20 to-white/10 pointer-events-none" />
+                                {/* Vertical Ribbon */}
+                                <div className={`absolute h-full w-12 ${ribbonColor} shadow-sm`} />
+                             </div>
+
+                             {/* Box Lid (Animates off) */}
+                             <motion.div 
+                                className={`absolute -top-4 -left-2 w-[110%] h-[60px] ${boxColor} rounded-lg shadow-xl z-30 border-b-2 border-black/10 flex justify-center overflow-visible`}
+                                animate={step === 'OPENING' ? { 
+                                    y: -150, 
+                                    rotateX: -60, 
+                                    rotate: 5,
+                                    opacity: 0,
+                                    transition: { duration: 0.8, ease: "circIn" }
+                                } : { 
+                                    y: [0, -2, 0],
+                                    rotate: [0, -1, 1, 0]
+                                }}
+                                transition={step !== 'OPENING' ? { repeat: Infinity, duration: 4, ease: "easeInOut" } : {}}
+                             >
+                                  {/* Lid sheen */}
+                                  <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent rounded-lg" />
+                                  {/* Vertical Ribbon on Lid */}
+                                  <div className={`absolute h-full w-12 ${ribbonColor}`} />
+                                  
+                                  {/* The Bow */}
+                                  <div className="absolute -top-8 w-full flex justify-center items-end">
+                                        {/* Left Loop */}
+                                        <div className={`w-14 h-14 rounded-full border-[6px] border-${ribbonColor.replace('bg-', '')} rotate-45 rounded-br-none bg-transparent absolute -left-1 shadow-sm`} style={{ borderColor: 'inherit' }} />
+                                        {/* Right Loop */}
+                                        <div className={`w-14 h-14 rounded-full border-[6px] border-${ribbonColor.replace('bg-', '')} -rotate-45 rounded-bl-none bg-transparent absolute -right-1 shadow-sm`} style={{ borderColor: 'inherit' }} />
+                                        {/* Center Knot */}
+                                        <div className={`relative z-10 w-8 h-8 rounded-full ${ribbonColor} shadow-md`} />
+                                  </div>
+                             </motion.div>
+
+                             <p className="absolute -bottom-16 w-full text-center text-white/80 animate-pulse font-bold tracking-widest text-sm uppercase">Tap to Unwrap</p>
+                        </div>
                     ) : (
-                        // STANDARD ENVELOPE
-                        <div className={`relative h-[240px] md:h-[300px] ${theme.envelopeColor} rounded-b-xl shadow-2xl flex flex-col items-center justify-center z-20`}>
+                        // STANDARD ENVELOPE (Improved)
+                        <div className={`relative h-[220px] md:h-[260px] w-[300px] md:w-[350px] ${theme.envelopeColor} rounded-b-lg shadow-2xl flex flex-col items-center justify-center z-20`}>
+                            {/* The Letter Inside (Flying out) */}
                             <motion.div 
-                                className={`absolute w-[90%] h-[90%] ${theme.paperColor} rounded-lg shadow-md z-10 flex flex-col p-6 items-center`}
-                                initial={{ y: 0 }}
-                                animate={step === 'OPENING' ? { y: -200, zIndex: 0 } : { y: 0 }}
-                                transition={{ duration: 1.5, ease: "easeInOut", delay: 0.3 }}
+                                className={`absolute w-[90%] h-[90%] ${theme.paperColor} rounded-sm shadow-md z-10 flex flex-col p-6 items-center border border-black/5`}
+                                initial={{ y: 20 }}
+                                animate={step === 'OPENING' ? { 
+                                    y: -250, 
+                                    scale: 0.8,
+                                    rotate: [0, -2, 2, 0],
+                                    transition: { duration: 1.2, ease: "easeInOut" } 
+                                } : { y: 20 }}
                             >
                                 <div className="w-full h-full opacity-30 overflow-hidden text-[6px] md:text-[8px] leading-relaxed select-none">
                                     {data.content}
                                 </div>
                             </motion.div>
-                            <div className={`absolute inset-0 z-30 pointer-events-none rounded-b-xl border-t border-white/10 ${theme.envelopeColor}`} 
-                                style={{ clipPath: 'polygon(0 0, 50% 40%, 100% 0, 100% 100%, 0 100%)' }}>
+
+                            {/* Envelope Body (Front Face) */}
+                            <div className={`absolute inset-0 z-30 pointer-events-none rounded-b-lg border-t border-black/10 ${theme.envelopeColor} shadow-inner`} 
+                                style={{ clipPath: 'polygon(0 0, 50% 45%, 100% 0, 100% 100%, 0 100%)' }}>
                             </div>
-                            <div className="absolute bottom-10 z-40 text-white/90 text-center font-elegant">
-                                <p className="text-xs uppercase tracking-widest opacity-60 mb-1">For</p>
-                                <h2 className="text-2xl italic font-serif">{data.recipientName}</h2>
+                            
+                            <div className="absolute bottom-8 z-40 text-white/90 text-center font-elegant w-full px-4">
+                                <p className="text-[10px] uppercase tracking-widest opacity-70 mb-1">A Letter For</p>
+                                <h2 className="text-3xl italic font-serif truncate drop-shadow-md">{data.recipientName}</h2>
                             </div>
                             
                             {/* Envelope Flap */}
                             <motion.div
-                                className={`absolute top-[-1px] left-0 w-full h-[120px] md:h-[150px] ${theme.envelopeColor} z-30 rounded-t-xl origin-top border-b border-black/10`}
+                                className={`absolute top-[-1px] left-0 w-full h-[120px] md:h-[140px] ${theme.envelopeColor} z-30 rounded-t-lg origin-top border-b border-black/20 brightness-90`}
                                 style={{ clipPath: 'polygon(0 0, 100% 0, 50% 100%)', backfaceVisibility: 'visible' }}
                                 initial={{ rotateX: 0 }}
                                 animate={step === 'OPENING' ? { rotateX: 180, zIndex: 0 } : { rotateX: 0 }}
@@ -304,13 +353,13 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
                             >
                                 <motion.div 
                                     animate={step === 'OPENING' ? { opacity: 0 } : { opacity: 1 }}
-                                    className="absolute top-[90%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-red-800 rounded-full border-2 border-red-900 shadow-md flex items-center justify-center text-[8px] text-red-200 font-bold"
+                                    className="absolute top-[85%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-red-800 rounded-full border-2 border-red-900 shadow-lg flex items-center justify-center"
                                 >
-                                    LOVE
+                                    <Heart size={20} className="text-red-200 fill-red-200/50" />
                                 </motion.div>
                             </motion.div>
                             
-                            <p className="absolute -bottom-12 w-full text-center text-white/70 animate-pulse text-sm">Tap to Open</p>
+                            <p className="absolute -bottom-12 w-full text-center text-white/70 animate-pulse text-sm font-medium tracking-wide">Tap to Open</p>
                         </div>
                     )}
                 </motion.div>
@@ -319,21 +368,23 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
             {step === 'READING' && (
                 <motion.div 
                     key="letter-full"
-                    initial={{ opacity: 0, scale: 0.8, rotate: -2 }}
-                    animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                    transition={{ duration: 0.8, type: "spring" }}
+                    initial={{ opacity: 0, scale: 0.4, y: 100 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    transition={{ duration: 0.8, type: "spring", bounce: 0.3 }}
                     className="relative z-50 w-full max-w-2xl px-4 flex justify-center"
                 >
-                    <div className={`relative ${theme.paperColor} p-8 md:p-12 w-full max-h-[80vh] overflow-y-auto custom-scrollbar shadow-[0_0_50px_rgba(0,0,0,0.5)] ${theme.textColor} paper-texture flex flex-col rounded-sm`}>
-                        <div className="sticky top-0 left-0 right-0 h-0 flex justify-center z-10">
-                            <div className="relative -top-10 w-32 h-8 bg-white/30 backdrop-blur-sm rotate-1 shadow-sm transform" />
+                    <div className={`relative ${theme.paperColor} p-8 md:p-12 w-full max-h-[80vh] overflow-y-auto custom-scrollbar shadow-[0_20px_60px_rgba(0,0,0,0.5)] ${theme.textColor} paper-texture flex flex-col rounded-sm ring-1 ring-black/5`}>
+                        {/* Stamp */}
+                        <div className="absolute top-6 right-6 w-20 h-24 border-4 border-double border-current opacity-30 -rotate-6 flex items-center justify-center">
+                            <div className="text-[10px] font-bold uppercase text-center leading-tight">LoveNotes<br/>Air Mail</div>
                         </div>
-                        <div className="flex-1 flex flex-col">
-                            <div className="mb-8 opacity-60 text-xs font-serif uppercase tracking-widest text-center border-b border-current pb-4 shrink-0">
+
+                        <div className="flex-1 flex flex-col relative z-10">
+                            <div className="mb-8 opacity-60 text-xs font-serif uppercase tracking-widest border-b border-current pb-4 shrink-0 w-fit">
                                 {new Date(data.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                             </div>
-                            <h1 className={`text-4xl md:text-5xl mb-8 ${theme.fontFamily} font-bold shrink-0`}>My Dearest {data.recipientName},</h1>
-                            <div className={`text-lg md:text-2xl leading-relaxed whitespace-pre-wrap ${theme.fontFamily} opacity-90`}>{data.content}</div>
+                            <h1 className={`text-4xl md:text-5xl mb-8 ${theme.fontFamily} font-bold shrink-0 leading-tight`}>My Dearest {data.recipientName},</h1>
+                            <div className={`text-lg md:text-2xl leading-relaxed whitespace-pre-wrap ${theme.fontFamily} opacity-95`}>{data.content}</div>
                             <div className="mt-12 pt-8 text-right shrink-0">
                                 <p className="text-sm opacity-60 mb-2 font-serif italic">Yours truly,</p>
                                 <p className={`text-3xl md:text-5xl ${theme.fontFamily} font-bold transform -rotate-2 inline-block`}>{data.senderName}</p>
