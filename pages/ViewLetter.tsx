@@ -88,8 +88,12 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
         return;
     }
     setStep('OPENING');
-    setTimeout(() => fireConfetti(), 300); // Confetti as box opens
-    setTimeout(() => setStep('READING'), 2000); // Wait for fly-out animation
+    
+    // Confetti timing depends on animation type
+    const confettiDelay = THEMES[data.theme].category === 'HOLIDAY' ? 800 : 300;
+    
+    setTimeout(() => fireConfetti(), confettiDelay); 
+    setTimeout(() => setStep('READING'), 2500); // Wait for full sequence
   };
 
   const fireConfetti = () => {
@@ -163,7 +167,7 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
 
   const theme = THEMES[data.theme || ThemeType.VELVET];
   // Box colors based on theme
-  const boxColor = theme.category === 'HOLIDAY' ? 'bg-red-700' : theme.envelopeColor;
+  const boxColor = theme.category === 'HOLIDAY' ? theme.envelopeColor : theme.envelopeColor;
   const ribbonColor = theme.category === 'HOLIDAY' ? 'bg-yellow-400' : 'bg-white/80';
   const boxShadow = theme.category === 'HOLIDAY' ? 'shadow-[0_20px_50px_rgba(220,38,38,0.4)]' : 'shadow-2xl';
 
@@ -253,7 +257,7 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
                             </motion.div>
                          </div>
                     ) : theme.category === 'HOLIDAY' ? (
-                        // 3D GIFT BOX (Improved)
+                        // 3D GIFT BOX (Sequenced)
                         <div className="relative w-[240px] h-[240px] md:w-[280px] md:h-[280px] preserve-3d transform-style-3d hover:scale-105 transition-transform duration-300">
                              
                              {/* The Letter inside (Starts hidden/compressed) */}
@@ -261,11 +265,11 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
                                 className={`absolute left-[10%] top-[10%] w-[80%] h-[80%] ${theme.paperColor} rounded-md shadow-lg z-10 flex items-center justify-center p-4`}
                                 initial={{ y: 0, scale: 0.9, opacity: 0 }}
                                 animate={step === 'OPENING' ? { 
-                                    y: -300, 
+                                    y: -350, 
                                     scale: 1, 
                                     opacity: 1,
                                     rotateY: 360,
-                                    transition: { duration: 1.5, ease: "backOut" }
+                                    transition: { duration: 1.5, ease: "backOut", delay: 1.0 } // Starts AFTER lid opens
                                 } : {}}
                              >
                                 <div className="text-[6px] opacity-40 overflow-hidden h-full">
@@ -277,19 +281,23 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
                              <div className={`absolute inset-0 ${boxColor} rounded-xl ${boxShadow} flex items-center justify-center z-20 border-b-4 border-black/10 overflow-hidden`}>
                                 {/* Gradient sheen */}
                                 <div className="absolute inset-0 bg-gradient-to-tr from-black/20 to-white/10 pointer-events-none" />
-                                {/* Vertical Ribbon */}
-                                <div className={`absolute h-full w-12 ${ribbonColor} shadow-sm`} />
+                                {/* Vertical Ribbon (Fades out first) */}
+                                <motion.div 
+                                    className={`absolute h-full w-12 ${ribbonColor} shadow-sm`}
+                                    animate={step === 'OPENING' ? { opacity: 0, scale: 1.5 } : { opacity: 1 }}
+                                    transition={{ duration: 0.5 }}
+                                />
                              </div>
 
-                             {/* Box Lid (Animates off) */}
+                             {/* Box Lid (Animates off second) */}
                              <motion.div 
                                 className={`absolute -top-4 -left-2 w-[110%] h-[60px] ${boxColor} rounded-lg shadow-xl z-30 border-b-2 border-black/10 flex justify-center overflow-visible`}
                                 animate={step === 'OPENING' ? { 
                                     y: -150, 
-                                    rotateX: -60, 
-                                    rotate: 5,
+                                    rotateX: -120, 
+                                    rotate: 10,
                                     opacity: 0,
-                                    transition: { duration: 0.8, ease: "circIn" }
+                                    transition: { duration: 0.8, ease: "circIn", delay: 0.5 } // Starts after ribbon
                                 } : { 
                                     y: [0, -2, 0],
                                     rotate: [0, -1, 1, 0]
@@ -299,57 +307,70 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
                                   {/* Lid sheen */}
                                   <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent rounded-lg" />
                                   {/* Vertical Ribbon on Lid */}
-                                  <div className={`absolute h-full w-12 ${ribbonColor}`} />
+                                  <motion.div 
+                                    className={`absolute h-full w-12 ${ribbonColor}`} 
+                                    animate={step === 'OPENING' ? { opacity: 0 } : { opacity: 1 }}
+                                    transition={{ duration: 0.5 }}
+                                  />
                                   
                                   {/* The Bow */}
-                                  <div className="absolute -top-8 w-full flex justify-center items-end">
+                                  <motion.div 
+                                    className="absolute -top-8 w-full flex justify-center items-end"
+                                    animate={step === 'OPENING' ? { scale: 0, opacity: 0 } : { scale: 1, opacity: 1 }}
+                                    transition={{ duration: 0.5 }}
+                                  >
                                         {/* Left Loop */}
                                         <div className={`w-14 h-14 rounded-full border-[6px] border-${ribbonColor.replace('bg-', '')} rotate-45 rounded-br-none bg-transparent absolute -left-1 shadow-sm`} style={{ borderColor: 'inherit' }} />
                                         {/* Right Loop */}
                                         <div className={`w-14 h-14 rounded-full border-[6px] border-${ribbonColor.replace('bg-', '')} -rotate-45 rounded-bl-none bg-transparent absolute -right-1 shadow-sm`} style={{ borderColor: 'inherit' }} />
                                         {/* Center Knot */}
                                         <div className={`relative z-10 w-8 h-8 rounded-full ${ribbonColor} shadow-md`} />
-                                  </div>
+                                  </motion.div>
                              </motion.div>
 
                              <p className="absolute -bottom-16 w-full text-center text-white/80 animate-pulse font-bold tracking-widest text-sm uppercase">Tap to Unwrap</p>
                         </div>
                     ) : (
-                        // STANDARD ENVELOPE (Improved)
-                        <div className={`relative h-[220px] md:h-[260px] w-[300px] md:w-[350px] ${theme.envelopeColor} rounded-b-lg shadow-2xl flex flex-col items-center justify-center z-20`}>
-                            {/* The Letter Inside (Flying out) */}
+                        // STANDARD ENVELOPE (Improved Layering)
+                        <div className={`relative h-[220px] md:h-[260px] w-[300px] md:w-[350px] flex flex-col items-center justify-center z-20`}>
+                            
+                            {/* 1. Envelope Back Face (Static Background) */}
+                            <div className={`absolute inset-0 rounded-b-lg ${theme.envelopeColor} brightness-75 z-10 shadow-lg`}></div>
+
+                            {/* 2. The Letter Inside (Starts inside, flies out) */}
                             <motion.div 
-                                className={`absolute w-[90%] h-[90%] ${theme.paperColor} rounded-sm shadow-md z-10 flex flex-col p-6 items-center border border-black/5`}
-                                initial={{ y: 20 }}
+                                className={`absolute bottom-2 w-[90%] h-[85%] ${theme.paperColor} rounded-sm shadow-md z-20 flex flex-col p-6 items-center border border-black/5`}
+                                initial={{ y: 0 }}
                                 animate={step === 'OPENING' ? { 
-                                    y: -250, 
-                                    scale: 0.8,
+                                    y: -300, 
+                                    scale: 1.1,
                                     rotate: [0, -2, 2, 0],
-                                    transition: { duration: 1.2, ease: "easeInOut" } 
-                                } : { y: 20 }}
+                                    zIndex: 50, // Moves above everything once out
+                                    transition: { duration: 1.0, ease: "easeInOut", delay: 0.3 } 
+                                } : { y: 0 }}
                             >
                                 <div className="w-full h-full opacity-30 overflow-hidden text-[6px] md:text-[8px] leading-relaxed select-none">
                                     {data.content}
                                 </div>
                             </motion.div>
 
-                            {/* Envelope Body (Front Face) */}
+                            {/* 3. Envelope Pocket (Front Face) */}
                             <div className={`absolute inset-0 z-30 pointer-events-none rounded-b-lg border-t border-black/10 ${theme.envelopeColor} shadow-inner`} 
-                                style={{ clipPath: 'polygon(0 0, 50% 45%, 100% 0, 100% 100%, 0 100%)' }}>
+                                style={{ clipPath: 'polygon(0 0, 50% 50%, 100% 0, 100% 100%, 0 100%)' }}>
                             </div>
                             
-                            <div className="absolute bottom-8 z-40 text-white/90 text-center font-elegant w-full px-4">
+                            <div className="absolute bottom-8 z-40 text-white/90 text-center font-elegant w-full px-4 pointer-events-none">
                                 <p className="text-[10px] uppercase tracking-widest opacity-70 mb-1">A Letter For</p>
                                 <h2 className="text-3xl italic font-serif truncate drop-shadow-md">{data.recipientName}</h2>
                             </div>
                             
-                            {/* Envelope Flap */}
+                            {/* 4. Envelope Flap */}
                             <motion.div
-                                className={`absolute top-[-1px] left-0 w-full h-[120px] md:h-[140px] ${theme.envelopeColor} z-30 rounded-t-lg origin-top border-b border-black/20 brightness-90`}
+                                className={`absolute top-[-1px] left-0 w-full h-[50%] ${theme.envelopeColor} z-40 rounded-t-lg origin-top border-b border-black/20 brightness-90`}
                                 style={{ clipPath: 'polygon(0 0, 100% 0, 50% 100%)', backfaceVisibility: 'visible' }}
                                 initial={{ rotateX: 0 }}
                                 animate={step === 'OPENING' ? { rotateX: 180, zIndex: 0 } : { rotateX: 0 }}
-                                transition={{ duration: 0.6, ease: "easeInOut" }}
+                                transition={{ duration: 0.4, ease: "easeInOut" }}
                             >
                                 <motion.div 
                                     animate={step === 'OPENING' ? { opacity: 0 } : { opacity: 1 }}
@@ -368,7 +389,7 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
             {step === 'READING' && (
                 <motion.div 
                     key="letter-full"
-                    initial={{ opacity: 0, scale: 0.4, y: 100 }}
+                    initial={{ opacity: 0, scale: 0.8, y: 50 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     transition={{ duration: 0.8, type: "spring", bounce: 0.3 }}
                     className="relative z-50 w-full max-w-2xl px-4 flex justify-center"
