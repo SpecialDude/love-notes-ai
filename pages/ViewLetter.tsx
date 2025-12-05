@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Eye, Heart, Timer, Gift, Lock } from 'lucide-react';
+import { ArrowLeft, Eye, Heart, Lock, Gift } from 'lucide-react';
 import { LetterData, ThemeType, ThemeCategory } from '../types';
 import { THEMES } from '../constants';
 import { incrementViewCount, toggleLike } from '../services/firebase';
@@ -17,7 +17,7 @@ interface Props {
   onBack?: () => void;
 }
 
-// --- STANDARD ENVELOPE COMPONENT (UNTOUCHED / PERFECTED) ---
+// --- COMPONENT 1: STANDARD ENVELOPE (Restored Stable Version) ---
 const StandardEnvelope: React.FC<{ data: LetterData, onOpen: () => void, step: string }> = ({ data, onOpen, step }) => {
     const theme = THEMES[data.theme || ThemeType.VELVET];
     
@@ -35,7 +35,7 @@ const StandardEnvelope: React.FC<{ data: LetterData, onOpen: () => void, step: s
                 
                 {/* The Letter Inside (Starts small and tucked in) */}
                 <motion.div 
-                    className={`absolute w-[90%] h-[180px] ${theme.paperColor} rounded-lg shadow-md z-15 flex flex-col p-4 items-center`}
+                    className={`absolute w-[90%] h-[180px] ${theme.paperColor} rounded-lg shadow-md z-[15] flex flex-col p-4 items-center`}
                     initial={{ y: 0, scale: 0.9 }}
                     animate={step === 'OPENING' ? { 
                         y: -300, 
@@ -44,7 +44,7 @@ const StandardEnvelope: React.FC<{ data: LetterData, onOpen: () => void, step: s
                     } : { y: 0, scale: 0.9 }}
                     transition={{ duration: 1.5, ease: "easeInOut", delay: 0.8 }}
                 >
-                     <div className="w-full h-full opacity-40 overflow-hidden text-[6px] md:text-[8px] leading-relaxed select-none">
+                     <div className="w-full h-full opacity-40 overflow-hidden text-[6px] md:text-[8px] leading-relaxed select-none text-black">
                         {data.content}
                      </div>
                 </motion.div>
@@ -85,115 +85,97 @@ const StandardEnvelope: React.FC<{ data: LetterData, onOpen: () => void, step: s
     );
 };
 
-// --- HOLIDAY GIFT BOX COMPONENT (RESTORED PREMIUM VERSION) ---
+// --- COMPONENT 2: HOLIDAY GIFT BOX (Premium 3D Animation) ---
 const HolidayGiftBox: React.FC<{ data: LetterData, onOpen: () => void, step: string }> = ({ data, onOpen, step }) => {
     const theme = THEMES[data.theme || ThemeType.WINTER];
-
-    // Cinematic Animation Sequence
-    // 1. Ribbons untie (0-1.5s)
-    // 2. Lid opens (1.5s-2.5s)
-    // 3. Letter rises (2.5s-4.0s)
-
-    const ribbonVariants = {
-        closed: { scale: 1, opacity: 1 },
-        opening: { scale: 1.5, opacity: 0, transition: { duration: 1.5, ease: "easeOut" } }
-    };
-
-    const lidVariants = {
-        closed: { y: 0, rotateX: 0 },
-        opening: { 
-            y: -120, 
-            rotateX: -180, 
-            transition: { duration: 1.2, delay: 1.6, ease: "backIn" } 
-        }
-    };
-
-    const letterVariants = {
-        closed: { y: 20, opacity: 0 }, // Starts hidden inside
-        opening: { 
-            y: -280, 
-            opacity: 1, 
-            scale: 1.1,
-            boxShadow: "0 0 40px rgba(255, 215, 0, 0.6)", // Gold Glow
-            transition: { duration: 2.0, delay: 2.8, ease: "easeOut" } 
-        }
-    };
+    const boxBaseColor = theme.envelopeColor;
+    const boxLidColor = theme.envelopeColor.replace('800', '700').replace('900', '800'); 
+    const ribbonColor = 'bg-yellow-400';
 
     return (
-        <motion.div
-            key="gift-box"
-            className="relative w-[300px] h-[220px] cursor-pointer perspective-1000"
+        <div 
+            className="relative w-[260px] h-[200px] preserve-3d transform-style-3d hover:scale-105 transition-transform duration-300 cursor-pointer"
             onClick={step === 'CLOSED' ? onOpen : undefined}
-            exit={{ scale: 1.5, opacity: 0, y: 100, transition: { duration: 0.8 } }}
         >
-             {/* Rising Letter (Behind Box Front, Inside Box) */}
-             <div className="absolute inset-0 flex justify-center items-center z-10">
+                {/* --- LAYER 1: The Letter (Hidden Inside) --- */}
                 <motion.div 
-                    className={`w-[85%] h-[180px] ${theme.paperColor} rounded shadow-lg p-6 flex flex-col items-center justify-start`}
-                    variants={letterVariants}
-                    initial="closed"
-                    animate={step === 'OPENING' ? "opening" : "closed"}
+                className={`absolute left-[5%] top-[5%] w-[90%] h-[90%] ${theme.paperColor} rounded-sm shadow-lg flex items-center justify-center p-4`}
+                initial={{ y: 0, scale: 0.9, opacity: 0, rotateY: 0 }}
+                animate={step === 'OPENING' ? { 
+                    y: -300, 
+                    scale: 1, 
+                    opacity: 1,
+                    rotateY: 360,
+                    zIndex: 50,
+                    boxShadow: "0 0 40px rgba(255,215,0, 0.6)", // Gold glow
+                    transition: { duration: 2.0, ease: "backOut", delay: 2.5 } // Starts AFTER Lid
+                } : { zIndex: 10 }}
                 >
-                     <div className="w-full text-[6px] text-center opacity-60 overflow-hidden leading-relaxed font-serif">
-                        {data.content}
-                     </div>
+                <div className="text-[6px] opacity-40 overflow-hidden h-full text-black leading-relaxed">
+                    {data.content}
+                </div>
                 </motion.div>
-             </div>
 
-            {/* Box Body (Front Face) */}
-            <div className={`absolute bottom-0 w-full h-[220px] ${theme.envelopeColor} rounded-lg shadow-2xl z-20 flex items-center justify-center transform-style-3d`}>
-                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent rounded-lg pointer-events-none"></div>
-                 
-                 {/* Vertical Ribbon (Front) */}
-                 <motion.div 
-                    className="absolute h-full w-[40px] bg-red-600 shadow-sm border-x border-red-700"
-                    variants={ribbonVariants}
-                    initial="closed"
-                    animate={step === 'OPENING' ? "opening" : "closed"}
-                 />
-                 
-                 <div className="z-30 text-white font-serif text-center drop-shadow-md">
-                    <p className="text-[10px] uppercase tracking-[0.2em] opacity-80 mb-1">A Gift For</p>
-                    <h2 className="text-3xl font-bold">{data.recipientName}</h2>
-                 </div>
-            </div>
-
-            {/* Box Lid (Animates Open) */}
-            <motion.div
-                className={`absolute top-0 -left-[10px] w-[320px] h-[60px] ${theme.envelopeColor} z-30 rounded-lg shadow-xl flex items-center justify-center transform-style-3d origin-top`}
-                variants={lidVariants}
-                initial="closed"
-                animate={step === 'OPENING' ? "opening" : "closed"}
-            >
-                <div className="absolute inset-0 bg-white/10 rounded-lg"></div>
+                {/* --- LAYER 2: Box Base (Ribbons slide off) --- */}
+                <div className={`absolute inset-0 ${boxBaseColor} rounded-md shadow-2xl flex items-center justify-center z-20`}>
+                <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/20 pointer-events-none rounded-md" />
                 
-                 {/* Lid Ribbon Horizontal */}
                 <motion.div 
-                    className="absolute w-full h-[40px] bg-red-600 shadow-sm border-y border-red-700"
-                    variants={ribbonVariants}
-                    initial="closed"
-                    animate={step === 'OPENING' ? "opening" : "closed"}
+                    className={`absolute h-full w-10 ${ribbonColor} shadow-sm`}
+                    animate={step === 'OPENING' ? { y: 250, opacity: 0 } : { y: 0, opacity: 1 }}
+                    transition={{ duration: 1.5, ease: "easeIn" }}
                 />
                 
-                {/* 3D Bow Knot */}
-                <motion.div 
-                    className="absolute -top-[35px] text-red-600 drop-shadow-2xl filter brightness-110"
-                    variants={ribbonVariants}
-                    initial="closed"
-                    animate={step === 'OPENING' ? "opening" : "closed"}
-                >
-                    <Gift size={70} strokeWidth={1.5} />
-                </motion.div>
-            </motion.div>
+                <div className="absolute bottom-8 text-white/80 font-serif text-lg tracking-widest drop-shadow-md">
+                    {data.recipientName}
+                </div>
+                </div>
 
-            {step === 'CLOSED' && (
-                <p className="absolute -bottom-16 w-full text-center text-white/70 animate-pulse text-sm font-bold tracking-widest uppercase">Tap to Unwrap</p>
-            )}
-        </motion.div>
+                {/* --- LAYER 3: Box Lid (Pops up AFTER ribbons) --- */}
+                <motion.div 
+                className={`absolute -top-10 -left-[5%] w-[110%] h-[60px] ${boxLidColor || boxBaseColor} rounded-md shadow-xl z-30 flex justify-center items-start overflow-visible`}
+                style={{ transformOrigin: "top" }}
+                animate={step === 'OPENING' ? { 
+                    y: -150, 
+                    rotateX: -180, 
+                    opacity: 0,
+                    transition: { duration: 1.2, ease: "circIn", delay: 1.6 } // Strict Delay
+                } : { 
+                    y: [0, -3, 0], // Idle bounce
+                }}
+                transition={step !== 'OPENING' ? { repeat: Infinity, duration: 4, ease: "easeInOut" } : {}}
+                >
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-black/10 rounded-md pointer-events-none" />
+                    
+                    <motion.div 
+                    className={`absolute h-full w-10 ${ribbonColor} shadow-sm`} 
+                    animate={step === 'OPENING' ? { opacity: 0 } : { opacity: 1 }}
+                    transition={{ duration: 0.5, delay: 0.5 }}
+                    />
+                    
+                    {/* THE BOW (Unties very first) */}
+                    <motion.div 
+                    className="absolute -top-10 w-full flex justify-center items-end"
+                    animate={step === 'OPENING' ? { scale: 0, opacity: 0, rotate: 45 } : { scale: 1, opacity: 1 }}
+                    transition={{ duration: 1.2, ease: "backIn" }} 
+                    >
+                        <div className={`w-16 h-16 rounded-full border-[8px] border-yellow-400 rotate-45 rounded-br-none absolute -left-2 drop-shadow-md`} />
+                        <div className={`w-16 h-16 rounded-full border-[8px] border-yellow-400 -rotate-45 rounded-bl-none absolute -right-2 drop-shadow-md`} />
+                        <div className={`relative z-10 w-8 h-8 rounded-full ${ribbonColor} shadow-inner flex items-center justify-center`}>
+                            <Gift size={16} className="text-yellow-700 opacity-50" />
+                        </div>
+                    </motion.div>
+                </motion.div>
+
+                {step === 'CLOSED' && (
+                    <p className="absolute -bottom-16 w-full text-center text-white/80 animate-pulse font-bold tracking-widest text-sm uppercase">Tap to Unwrap</p>
+                )}
+        </div>
     );
 };
 
-// --- MAIN VIEW COMPONENT ---
+
+// --- MAIN COMPONENT ---
 const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
   const { showToast } = useToast();
   const [step, setStep] = useState<'CLOSED' | 'OPENING' | 'READING'>('CLOSED');
@@ -201,11 +183,10 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
   const [viewCount, setViewCount] = useState(data.views || 0);
   const [likesCount, setLikesCount] = useState(data.likes || 0);
   const [isLiked, setIsLiked] = useState(false);
+  
+  // Time Capsule State
   const [isLocked, setIsLocked] = useState(false);
-  const [timeLeft, setTimeLeft] = useState('');
-
-  const theme = THEMES[data.theme || ThemeType.VELVET];
-  const isHolidayTheme = theme.category === ThemeCategory.HOLIDAY;
+  const [timeLeft, setTimeLeft] = useState<{days: number, hours: number, mins: number, secs: number} | null>(null);
 
   useEffect(() => {
     if (data?.recipientName) {
@@ -213,44 +194,43 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
     } else {
       document.title = "You have a new message 💌";
     }
-  }, [data]);
-
-  useEffect(() => {
+    
     // Check Lock Status
     if (data.unlockDate) {
-        const unlock = new Date(data.unlockDate).getTime();
-        const now = Date.now();
-        if (now < unlock) {
+        const unlockTime = new Date(data.unlockDate).getTime();
+        if (Date.now() < unlockTime) {
             setIsLocked(true);
             const updateTimer = () => {
-                const diff = unlock - Date.now();
+                const now = Date.now();
+                const diff = unlockTime - now;
                 if (diff <= 0) {
                     setIsLocked(false);
                     return;
                 }
                 const days = Math.floor(diff / (1000 * 60 * 60 * 24));
                 const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                setTimeLeft(`${days}d ${hours}h ${minutes}m`);
+                const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const secs = Math.floor((diff % (1000 * 60)) / 1000);
+                setTimeLeft({ days, hours, mins, secs });
             };
             updateTimer();
-            const interval = setInterval(updateTimer, 60000); // Update every minute
+            const interval = setInterval(updateTimer, 1000);
             return () => clearInterval(interval);
         }
     }
-  }, [data.unlockDate]);
+  }, [data]);
 
   useEffect(() => {
     if (data) {
         let src = data.musicUrl;
         if (!src) src = getRandomMusicUrl() || undefined;
         if (!src) {
-            const t = THEMES[data.theme || ThemeType.VELVET];
-            src = t.musicUrl;
+            const theme = THEMES[data.theme || ThemeType.VELVET];
+            src = theme.musicUrl;
         }
         if (src) setMusicSrc(src);
 
-        if (data.id && !onBack) {
+        if (data.id && !onBack && !isLocked) {
             incrementViewCount(data.id);
             setViewCount((v) => v + 1);
             
@@ -259,28 +239,30 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
             setIsLiked(likedSet.has(data.id));
         }
     }
-  }, [data, onBack]);
+  }, [data, onBack, isLocked]);
 
   const handleOpen = () => {
     if (isLocked) {
-        showToast("This letter is locked until the scheduled time!", "info");
+        showToast("This Time Capsule is still locked! 🔒", "info");
         return;
     }
     setStep('OPENING');
     
-    // Fire confetti slightly after opening starts
-    setTimeout(() => fireConfetti(), 1000);
+    // Determine Delay based on theme category (Gift takes longer)
+    const isHoliday = THEMES[data.theme].category === ThemeCategory.HOLIDAY;
     
-    // Transition to Reading Mode
-    // Holiday animation takes ~4.5s total (ribbon 1.5 + lid 1.0 + letter 2.0)
-    // Envelope takes ~2.5s
-    const delay = isHolidayTheme ? 5000 : 3000;
-    setTimeout(() => setStep('READING'), delay);
+    // Delays sync with CSS animations
+    const confettiDelay = isHoliday ? 4000 : 2500; 
+    const readDelay = isHoliday ? 5500 : 3500;
+
+    setTimeout(() => fireConfetti(), confettiDelay); 
+    setTimeout(() => setStep('READING'), readDelay); 
   };
 
   const fireConfetti = () => {
     const themeColors = data.theme === ThemeType.NOIR ? ['#000', '#555'] : ['#ff4d4d', '#ff9a9e', '#ffd1dc'];
-    if (isHolidayTheme) themeColors.push('#FFD700', '#228B22'); // Gold/Green for holidays
+    if (data.theme === ThemeType.HOLLY) { themeColors.push('#15803d'); themeColors.push('#b91c1c'); themeColors.push('#fbbf24'); }
+    if (data.theme === ThemeType.WINTER || data.theme === ThemeType.FROST) { themeColors.push('#ffffff'); themeColors.push('#bae6fd'); }
 
     const duration = 3500;
     const end = Date.now() + duration;
@@ -316,7 +298,6 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
     if (!data.id) return;
     const deviceId = getDeviceId();
     
-    // Optimistic Update
     if (isLiked) {
         setIsLiked(false);
         setLikesCount(p => p - 1);
@@ -327,17 +308,15 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
         setLikesCount(p => p + 1);
         addLocalLike(data.id);
         
-        // Button Confetti
         confetti({
             particleCount: 15,
             spread: 60,
-            origin: { x: 0.5, y: 0.5 }, 
+            origin: { x: 0.5, y: 0.5 },
             colors: ['#ef4444', '#f472b6', '#ffffff'],
             scalar: 0.8
         });
     }
 
-    // Server Sync
     const success = await toggleLike(data.id, deviceId);
     if (!success) {
         setIsLiked(!isLiked);
@@ -345,6 +324,9 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
     }
   };
 
+  const theme = THEMES[data.theme || ThemeType.VELVET];
+  const isHoliday = theme.category === ThemeCategory.HOLIDAY;
+  
   return (
     <div className={`min-h-screen relative overflow-hidden flex flex-col items-center justify-center ${theme.bgGradient}`}>
       <AnimatedBackground theme={data.theme} />
@@ -363,8 +345,7 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
       </div>
 
       {step === 'READING' && (
-          <div className="fixed top-6 right-6 z-50 flex items-center gap-2">
-               {/* Like Button */}
+          <div className="fixed top-6 right-6 z-50 flex items-center gap-2 animate-in fade-in duration-1000">
                {data.id && !onBack && (
                   <motion.button 
                     whileTap={{ scale: 0.8 }}
@@ -388,45 +369,76 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
       <div className="relative w-full max-w-4xl h-[80vh] flex items-center justify-center perspective-1000">
         <AnimatePresence mode="wait">
             {step !== 'READING' && (
-                isLocked ? (
-                    <motion.div 
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="flex flex-col items-center text-white text-center p-8 bg-black/30 backdrop-blur-md rounded-2xl border border-white/10"
-                    >
-                        <Lock size={48} className="mb-4 text-white/50" />
-                        <h2 className="text-2xl font-bold mb-2">Time Capsule Locked</h2>
-                        <p className="opacity-70 mb-6 max-w-xs">This letter is scheduled to open in the future.</p>
-                        <div className="flex items-center gap-3 text-3xl font-mono font-bold text-amber-300">
-                            <Timer />
-                            <span>{timeLeft}</span>
-                        </div>
-                    </motion.div>
-                ) : isHolidayTheme ? (
-                    <HolidayGiftBox data={data} onOpen={handleOpen} step={step} />
-                ) : (
-                    <StandardEnvelope data={data} onOpen={handleOpen} step={step} />
-                )
+                <div className="relative">
+                    {isLocked ? (
+                         // LOCKED STATE (TIME CAPSULE)
+                         <motion.div 
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.8, opacity: 0 }}
+                            className="flex flex-col items-center"
+                         >
+                            <motion.div 
+                                animate={{ rotate: [0, -5, 5, -5, 5, 0] }}
+                                transition={{ repeat: Infinity, duration: 2, repeatDelay: 1 }}
+                                className="bg-black/40 backdrop-blur-xl border border-white/20 p-8 rounded-3xl text-center shadow-2xl"
+                            >
+                                <Lock size={48} className="text-white mx-auto mb-4" />
+                                <h2 className="text-2xl font-cinematic text-white mb-2">Time Capsule</h2>
+                                <p className="text-white/60 text-sm mb-6">This message is locked until {new Date(data.unlockDate!).toLocaleDateString()}</p>
+                                
+                                {timeLeft && (
+                                    <div className="grid grid-cols-4 gap-4 text-white">
+                                        <div className="flex flex-col">
+                                            <span className="text-2xl font-bold font-mono">{timeLeft.days}</span>
+                                            <span className="text-[10px] uppercase opacity-50">Days</span>
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-2xl font-bold font-mono">{timeLeft.hours}</span>
+                                            <span className="text-[10px] uppercase opacity-50">Hrs</span>
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-2xl font-bold font-mono">{timeLeft.mins}</span>
+                                            <span className="text-[10px] uppercase opacity-50">Mins</span>
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-2xl font-bold font-mono">{timeLeft.secs}</span>
+                                            <span className="text-[10px] uppercase opacity-50">Secs</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </motion.div>
+                         </motion.div>
+                    ) : isHoliday ? (
+                        // HOLIDAY THEMES -> GIFT BOX
+                        <HolidayGiftBox data={data} onOpen={handleOpen} step={step} />
+                    ) : (
+                        // STANDARD THEMES -> ENVELOPE (RESTORED)
+                        <StandardEnvelope data={data} onOpen={handleOpen} step={step} />
+                    )}
+                </div>
             )}
 
             {step === 'READING' && (
                 <motion.div 
                     key="letter-full"
-                    initial={{ opacity: 0, scale: 0.8, rotate: -2 }}
-                    animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                    transition={{ duration: 0.8, type: "spring" }}
+                    initial={{ opacity: 0, scale: 0.8, y: 50 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    transition={{ duration: 0.8, type: "spring", bounce: 0.3 }}
                     className="relative z-50 w-full max-w-2xl px-4 flex justify-center"
                 >
-                    <div className={`relative ${theme.paperColor} p-8 md:p-12 w-full max-h-[80vh] overflow-y-auto custom-scrollbar shadow-[0_0_50px_rgba(0,0,0,0.5)] ${theme.textColor} paper-texture flex flex-col rounded-sm`}>
-                        <div className="sticky top-0 left-0 right-0 h-0 flex justify-center z-10">
-                            <div className="relative -top-10 w-32 h-8 bg-white/30 backdrop-blur-sm rotate-1 shadow-sm transform" />
+                    <div className={`relative ${theme.paperColor} p-8 md:p-12 w-full max-h-[80vh] overflow-y-auto custom-scrollbar shadow-[0_20px_60px_rgba(0,0,0,0.5)] ${theme.textColor} paper-texture flex flex-col rounded-sm ring-1 ring-black/5`}>
+                        {/* Stamp */}
+                        <div className="absolute top-6 right-6 w-20 h-24 border-4 border-double border-current opacity-30 -rotate-6 flex items-center justify-center">
+                            <div className="text-[10px] font-bold uppercase text-center leading-tight">LoveNotes<br/>Air Mail</div>
                         </div>
-                        <div className="flex-1 flex flex-col">
-                            <div className="mb-8 opacity-60 text-xs font-serif uppercase tracking-widest text-center border-b border-current pb-4 shrink-0">
+
+                        <div className="flex-1 flex flex-col relative z-10">
+                            <div className="mb-8 opacity-60 text-xs font-serif uppercase tracking-widest border-b border-current pb-4 shrink-0 w-fit">
                                 {new Date(data.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                             </div>
-                            <h1 className={`text-4xl md:text-5xl mb-8 ${theme.fontFamily} font-bold shrink-0`}>My Dearest {data.recipientName},</h1>
-                            <div className={`text-lg md:text-2xl leading-relaxed whitespace-pre-wrap ${theme.fontFamily} opacity-90`}>{data.content}</div>
+                            <h1 className={`text-4xl md:text-5xl mb-8 ${theme.fontFamily} font-bold shrink-0 leading-tight`}>My Dearest {data.recipientName},</h1>
+                            <div className={`text-lg md:text-2xl leading-relaxed whitespace-pre-wrap ${theme.fontFamily} opacity-95`}>{data.content}</div>
                             <div className="mt-12 pt-8 text-right shrink-0">
                                 <p className="text-sm opacity-60 mb-2 font-serif italic">Yours truly,</p>
                                 <p className={`text-3xl md:text-5xl ${theme.fontFamily} font-bold transform -rotate-2 inline-block`}>{data.senderName}</p>

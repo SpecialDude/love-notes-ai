@@ -19,85 +19,95 @@ const getMusicEnv = (key: string, defaultUrl: string): string => {
   return defaultUrl;
 };
 
+// Default Music Links (Internet Archive MP3s)
+const CLASSIC_PIANO = "https://ia800305.us.archive.org/3/items/LisztLiebestraumNo3/Liszt_Liebestraum_No3.mp3";
+const JAZZ = "https://ia800303.us.archive.org/34/items/ScottJoplinTheEntertainer1902/Scott%20Joplin%20-%20The%20Entertainer%20%281902%29.mp3";
+const SILENT_NIGHT = "https://ia800503.us.archive.org/10/items/SilentNight_601/SilentNight.mp3";
+const GYMNOPEDIE = "https://ia800504.us.archive.org/13/items/ErikSatieGymnopedieNo1/Erik%20Satie%20-%20Gymnopedie%20No%201.mp3";
+const CLAIR_DE_LUNE = "https://ia800302.us.archive.org/27/items/DebussyClairDeLune/Debussy%20-%20Clair%20de%20lune.mp3";
+
 const MUSIC_URLS = {
-  VELVET: getMusicEnv('VELVET', "https://ia800305.us.archive.org/3/items/LisztLiebestraumNo3/Liszt_Liebestraum_No3.mp3"), 
-  PASTEL: getMusicEnv('PASTEL', "https://ia800504.us.archive.org/13/items/ErikSatieGymnopedieNo1/Erik%20Satie%20-%20Gymnopedie%20No%201.mp3"), 
-  MIDNIGHT: getMusicEnv('MIDNIGHT', "https://ia802807.us.archive.org/2/items/BeethovenMoonlightSonata/Beethoven-MoonlightSonata.mp3"), 
-  EARTH: getMusicEnv('EARTH', "https://ia600500.us.archive.org/3/items/BachAirOnTheGString/Bach%20-%20Air%20on%20the%20G%20String.mp3"), 
-  NOIR: getMusicEnv('NOIR', "https://ia800303.us.archive.org/34/items/ScottJoplinTheEntertainer1902/Scott%20Joplin%20-%20The%20Entertainer%20%281902%29.mp3"), 
-  VINTAGE: getMusicEnv('VINTAGE', "https://ia800300.us.archive.org/8/items/ErikSatieGnossienneNo1/Erik%20Satie%20-%20Gnossienne%20No%201.mp3"), 
-  OCEAN: getMusicEnv('OCEAN', "https://ia800302.us.archive.org/27/items/DebussyClairDeLune/Debussy%20-%20Clair%20de%20lune.mp3"), 
-  SUNSET: getMusicEnv('SUNSET', "https://ia800302.us.archive.org/27/items/DebussyClairDeLune/Debussy%20-%20Clair%20de%20lune.mp3"),
-  // Holiday Music (Silent Night / Jingle Bells style lo-fi)
-  HOLIDAY: getMusicEnv('HOLIDAY', "https://ia800105.us.archive.org/9/items/SilentNightPiano_201303/SilentNight.mp3"),
-  GINGERBREAD: getMusicEnv('GINGERBREAD', "https://ia801407.us.archive.org/27/items/we-wish-you-a-merry-christmas-instrumental/We%20Wish%20You%20A%20Merry%20Christmas%20%28Instrumental%29.mp3"),
+  VELVET: getMusicEnv('VELVET', CLASSIC_PIANO),
+  PASTEL: getMusicEnv('PASTEL', GYMNOPEDIE),
+  MIDNIGHT: getMusicEnv('MIDNIGHT', "https://ia802807.us.archive.org/2/items/BeethovenMoonlightSonata/Beethoven-MoonlightSonata.mp3"),
+  EARTH: getMusicEnv('EARTH', "https://ia600500.us.archive.org/3/items/BachAirOnTheGString/Bach%20-%20Air%20on%20the%20G%20String.mp3"),
+  NOIR: getMusicEnv('NOIR', JAZZ),
+  VINTAGE: getMusicEnv('VINTAGE', "https://ia800300.us.archive.org/8/items/ErikSatieGnossienneNo1/Erik%20Satie%20-%20Gnossienne%20No%201.mp3"),
+  OCEAN: getMusicEnv('OCEAN', CLAIR_DE_LUNE),
+  SUNSET: getMusicEnv('SUNSET', CLAIR_DE_LUNE),
+  
+  // Holiday Music
+  WINTER: getMusicEnv('WINTER', SILENT_NIGHT),
+  HOLLY: getMusicEnv('HOLLY', "https://ia902606.us.archive.org/14/items/jingle-bells-mp-3-music/Jingle%20Bells%20%28mp3music.io%29.mp3"), // Jingle Bells or similar
+  GINGERBREAD: getMusicEnv('GINGERBREAD', "https://ia800303.us.archive.org/15/items/WeWishYouAMerryChristmas_584/WeWishYouAMerryChristmas.mp3"), // We Wish You A Merry Christmas
+  FROST: getMusicEnv('FROST', "https://ia801407.us.archive.org/33/items/DanceOfTheSugarPlumFairy_220/DanceOfTheSugarPlumFairy.mp3"), // Sugar Plum Fairy
 };
 
 export const THEMES: Record<ThemeType, ThemeConfig> = {
   // --- HOLIDAY ---
   [ThemeType.WINTER]: {
     id: ThemeType.WINTER,
+    name: "Silent Night",
     category: ThemeCategory.HOLIDAY,
-    name: "Winter",
-    description: "Silent Night",
-    textColor: "text-slate-100",
-    accentColor: "bg-blue-300",
-    fontFamily: "font-serif",
-    bgGradient: "bg-gradient-to-b from-slate-900 via-blue-900 to-black",
-    paperColor: "bg-slate-800",
-    envelopeColor: "bg-blue-950",
-    musicUrl: MUSIC_URLS.HOLIDAY,
-    previewColor: "#172554"
+    description: "Deep Blue & Holy",
+    textColor: "text-slate-900",
+    accentColor: "bg-blue-600",
+    fontFamily: "font-elegant",
+    bgGradient: "bg-gradient-to-b from-slate-900 via-blue-950 to-slate-900",
+    paperColor: "bg-slate-50",
+    envelopeColor: "bg-blue-900",
+    musicUrl: MUSIC_URLS.WINTER,
+    previewColor: "#1e3a8a"
   },
   [ThemeType.HOLLY]: {
     id: ThemeType.HOLLY,
-    category: ThemeCategory.HOLIDAY,
     name: "Holly",
-    description: "Classic Xmas",
+    category: ThemeCategory.HOLIDAY,
+    description: "Classic Christmas",
     textColor: "text-red-950",
     accentColor: "bg-red-600",
-    fontFamily: "font-elegant",
-    bgGradient: "bg-gradient-to-br from-green-950 via-green-900 to-red-950",
-    paperColor: "bg-[#fff0f0]",
-    envelopeColor: "bg-green-900",
-    musicUrl: MUSIC_URLS.HOLIDAY,
-    previewColor: "#14532d"
+    fontFamily: "font-serif",
+    bgGradient: "bg-gradient-to-br from-green-900 via-green-800 to-red-950",
+    paperColor: "bg-[#f0fdf4]", // Very light green
+    envelopeColor: "bg-red-800",
+    musicUrl: MUSIC_URLS.HOLLY,
+    previewColor: "#14532d" // Dark Green
   },
   [ThemeType.GINGERBREAD]: {
     id: ThemeType.GINGERBREAD,
+    name: "Gingerbread",
     category: ThemeCategory.HOLIDAY,
-    name: "Ginger",
     description: "Warm & Cozy",
     textColor: "text-amber-950",
     accentColor: "bg-amber-600",
     fontFamily: "font-casual",
-    bgGradient: "bg-gradient-to-br from-amber-900 via-orange-900 to-amber-950",
-    paperColor: "bg-[#fff8e1]",
+    bgGradient: "bg-gradient-to-br from-amber-900 via-orange-900 to-brown-900",
+    paperColor: "bg-[#fff8e1]", // Creamy
     envelopeColor: "bg-[#8B4513]", // SaddleBrown
     musicUrl: MUSIC_URLS.GINGERBREAD,
-    previewColor: "#92400e"
+    previewColor: "#92400e" // Amber
   },
   [ThemeType.FROST]: {
     id: ThemeType.FROST,
-    category: ThemeCategory.HOLIDAY,
     name: "Frost",
+    category: ThemeCategory.HOLIDAY,
     description: "Icy Magic",
-    textColor: "text-cyan-900",
+    textColor: "text-slate-600",
     accentColor: "bg-cyan-400",
-    fontFamily: "font-fancy",
-    bgGradient: "bg-gradient-to-t from-cyan-100 via-white to-cyan-50",
+    fontFamily: "font-cinematic",
+    bgGradient: "bg-gradient-to-tr from-cyan-100 via-white to-blue-100",
     paperColor: "bg-white",
     envelopeColor: "bg-cyan-200",
-    musicUrl: MUSIC_URLS.HOLIDAY,
-    previewColor: "#a5f3fc"
+    musicUrl: MUSIC_URLS.FROST,
+    previewColor: "#a5f3fc" // Light Cyan
   },
 
-  // --- ROMANCE ---
+  // --- ROMANTIC ---
   [ThemeType.VELVET]: {
     id: ThemeType.VELVET,
-    category: ThemeCategory.ROMANCE,
     name: "Velvet",
-    description: "Deep romance",
+    category: ThemeCategory.ROMANTIC,
+    description: "Deep Romance",
     textColor: "text-rose-950",
     accentColor: "bg-rose-600",
     fontFamily: "font-elegant",
@@ -107,24 +117,10 @@ export const THEMES: Record<ThemeType, ThemeConfig> = {
     musicUrl: MUSIC_URLS.VELVET,
     previewColor: "#881337"
   },
-  [ThemeType.PASTEL]: {
-    id: ThemeType.PASTEL,
-    category: ThemeCategory.ROMANCE,
-    name: "Candy",
-    description: "Sweet & Playful",
-    textColor: "text-slate-700",
-    accentColor: "bg-pink-400",
-    fontFamily: "font-casual",
-    bgGradient: "bg-gradient-to-tr from-pink-200 via-purple-100 to-blue-100",
-    paperColor: "bg-white",
-    envelopeColor: "bg-pink-300",
-    musicUrl: MUSIC_URLS.PASTEL,
-    previewColor: "#f472b6"
-  },
   [ThemeType.SUNSET]: {
     id: ThemeType.SUNSET,
-    category: ThemeCategory.ROMANCE,
     name: "Sunset",
+    category: ThemeCategory.ROMANTIC,
     description: "Warm & Hopeful",
     textColor: "text-orange-950",
     accentColor: "bg-orange-500",
@@ -139,8 +135,8 @@ export const THEMES: Record<ThemeType, ThemeConfig> = {
   // --- VIBES ---
   [ThemeType.MIDNIGHT]: {
     id: ThemeType.MIDNIGHT,
+    name: "Midnight",
     category: ThemeCategory.VIBES,
-    name: "Night",
     description: "Cosmic & Deep",
     textColor: "text-indigo-100",
     accentColor: "bg-indigo-500",
@@ -153,8 +149,8 @@ export const THEMES: Record<ThemeType, ThemeConfig> = {
   },
   [ThemeType.OCEAN]: {
     id: ThemeType.OCEAN,
-    category: ThemeCategory.VIBES,
     name: "Ocean",
+    category: ThemeCategory.VIBES,
     description: "Calm & Blue",
     textColor: "text-cyan-950",
     accentColor: "bg-cyan-600",
@@ -165,12 +161,26 @@ export const THEMES: Record<ThemeType, ThemeConfig> = {
     musicUrl: MUSIC_URLS.OCEAN,
     previewColor: "#0e7490"
   },
+  [ThemeType.PASTEL]: {
+    id: ThemeType.PASTEL,
+    name: "Candy",
+    category: ThemeCategory.VIBES,
+    description: "Sweet & Playful",
+    textColor: "text-slate-700",
+    accentColor: "bg-pink-400",
+    fontFamily: "font-casual",
+    bgGradient: "bg-gradient-to-tr from-pink-200 via-purple-100 to-blue-100",
+    paperColor: "bg-white",
+    envelopeColor: "bg-pink-300",
+    musicUrl: MUSIC_URLS.PASTEL,
+    previewColor: "#f472b6"
+  },
 
   // --- CLASSIC ---
   [ThemeType.EARTH]: {
     id: ThemeType.EARTH,
-    category: ThemeCategory.CLASSIC,
     name: "Earth",
+    category: ThemeCategory.CLASSIC,
     description: "Grounded",
     textColor: "text-stone-900",
     accentColor: "bg-emerald-700",
@@ -183,8 +193,8 @@ export const THEMES: Record<ThemeType, ThemeConfig> = {
   },
   [ThemeType.NOIR]: {
     id: ThemeType.NOIR,
-    category: ThemeCategory.CLASSIC,
     name: "Noir",
+    category: ThemeCategory.CLASSIC,
     description: "Minimalist",
     textColor: "text-black",
     accentColor: "bg-gray-800",
@@ -197,8 +207,8 @@ export const THEMES: Record<ThemeType, ThemeConfig> = {
   },
   [ThemeType.VINTAGE]: {
     id: ThemeType.VINTAGE,
-    category: ThemeCategory.CLASSIC,
     name: "Vintage",
+    category: ThemeCategory.CLASSIC,
     description: "Old School",
     textColor: "text-stone-800",
     accentColor: "bg-amber-700",
