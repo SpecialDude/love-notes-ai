@@ -1,14 +1,31 @@
 
 export enum ThemeType {
+  // Christmas / Holiday
+  WINTER = 'WINTER',      // Deep Blue (Silent Night)
+  HOLLY = 'HOLLY',        // Red & Green (Classic)
+  GINGERBREAD = 'GINGERBREAD', // Warm Amber (Cozy)
+  FROST = 'FROST',        // Icy White/Cyan (Magical)
+
+  // Romantic
   VELVET = 'VELVET',      // Classic Romantic
+  SUNSET = 'SUNSET',      // Warm/Energetic
+  
+  // Vibes
   MIDNIGHT = 'MIDNIGHT',  // Cosmic/Deep
+  OCEAN = 'OCEAN',        // Calm/Deep Blue
+  PASTEL = 'PASTEL',      // Cute/Playful
+  
+  // Classic
   EARTH = 'EARTH',        // Family/Grounded
   NOIR = 'NOIR',          // Modern/Bro/Friend
-  PASTEL = 'PASTEL',      // Cute/Playful
   VINTAGE = 'VINTAGE',    // Old School/Typewriter
-  OCEAN = 'OCEAN',        // Calm/Deep Blue
-  SUNSET = 'SUNSET',      // Warm/Energetic
-  WINTER = 'WINTER'       // Christmas/Holiday
+}
+
+export enum ThemeCategory {
+  HOLIDAY = 'HOLIDAY',
+  ROMANTIC = 'ROMANTIC',
+  VIBES = 'VIBES',
+  CLASSIC = 'CLASSIC'
 }
 
 export enum RelationshipType {
@@ -25,6 +42,7 @@ export enum RelationshipType {
 export interface ThemeConfig {
   id: ThemeType;
   name: string;
+  category: ThemeCategory; // New field for grouping
   description: string;
   textColor: string;
   accentColor: string;

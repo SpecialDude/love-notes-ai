@@ -61,8 +61,9 @@ const AnimatedBackground: React.FC<Props> = ({ theme }) => {
                 this.vx = Math.sin(Math.random() * Math.PI * 2) * 0.3;
                 break;
             case ThemeType.OCEAN:
-                this.size = Math.random() * 8 + 2; // Bubbles
-                this.vy = -Math.random() * 1 - 0.2; // Rise faster
+            case ThemeType.FROST:
+                this.size = Math.random() * 8 + 2; 
+                this.vy = -Math.random() * 1 - 0.2; 
                 this.vx = (Math.random() - 0.5) * 0.2;
                 break;
             case ThemeType.MIDNIGHT:
@@ -71,7 +72,8 @@ const AnimatedBackground: React.FC<Props> = ({ theme }) => {
                 this.vy = (Math.random() - 0.5) * 0.05;
                 break;
             case ThemeType.VINTAGE:
-                this.size = Math.random() * 2 + 1; // Dust
+            case ThemeType.GINGERBREAD:
+                this.size = Math.random() * 2 + 1; // Dust / Warm sparkles
                 this.vx = (Math.random() - 0.5) * 0.5;
                 this.vy = (Math.random() - 0.5) * 0.5;
                 break;
@@ -86,8 +88,9 @@ const AnimatedBackground: React.FC<Props> = ({ theme }) => {
                 this.vy = Math.random() * 0.1;
                 break;
             case ThemeType.EARTH:
+            case ThemeType.HOLLY:
                  this.size = Math.random() * 4 + 1;
-                 this.vy = Math.random() * 0.5 + 0.1; // Falling leaves/dust
+                 this.vy = Math.random() * 0.5 + 0.1; // Falling leaves / berries
                  this.vx = Math.sin(Math.random() * 10) * 0.5;
                  break;
             case ThemeType.WINTER:
@@ -110,7 +113,7 @@ const AnimatedBackground: React.FC<Props> = ({ theme }) => {
         this.y += this.vy;
 
         // Theme specific movement updates
-        if (theme === ThemeType.VELVET || theme === ThemeType.EARTH || theme === ThemeType.WINTER) {
+        if (theme === ThemeType.VELVET || theme === ThemeType.EARTH || theme === ThemeType.WINTER || theme === ThemeType.HOLLY) {
             this.x += Math.sin(this.life * 0.02) * 0.2;
         }
 
@@ -169,6 +172,18 @@ const AnimatedBackground: React.FC<Props> = ({ theme }) => {
             ctx.rect(this.x, this.y, this.size, this.size);
             ctx.fill();
         }
+        else if (theme === ThemeType.GINGERBREAD) {
+            ctx.fillStyle = Math.random() > 0.5 ? '#fbbf24' : '#92400e'; // Gold or Brown
+            ctx.rect(this.x, this.y, this.size, this.size);
+            ctx.fill();
+        }
+        else if (theme === ThemeType.FROST) {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.shadowBlur = 5;
+            ctx.shadowColor = '#06b6d4'; // Cyan glow
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.fill();
+        }
         else if (theme === ThemeType.SUNSET) {
             const g = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size);
             g.addColorStop(0, 'rgba(255, 200, 100, 0.3)');
@@ -187,6 +202,12 @@ const AnimatedBackground: React.FC<Props> = ({ theme }) => {
             ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
             ctx.shadowBlur = 4;
             ctx.shadowColor = 'white';
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        else if (theme === ThemeType.HOLLY) {
+            // Red and Green Berries
+            ctx.fillStyle = this.type > 0.5 ? '#dc2626' : '#166534';
             ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
             ctx.fill();
         }
