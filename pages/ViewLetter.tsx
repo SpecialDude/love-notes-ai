@@ -92,9 +92,7 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
     // Confetti timing depends on animation type (Gift vs Envelope)
     const isHoliday = THEMES[data.theme].category === 'HOLIDAY';
     // Slower timing for dramatic effect
-    // Gift Box: Ribbon (1.5s) + Lid (1.2s) + Letter Rise (2.0s) ~ 4.7s total
-    // Envelope: Flap (1.0s) + Letter Rise (2.0s) ~ 3.0s total
-    const confettiDelay = isHoliday ? 3500 : 2000; 
+    const confettiDelay = isHoliday ? 3500 : 2500; 
     
     setTimeout(() => fireConfetti(), confettiDelay); 
     setTimeout(() => setStep('READING'), isHoliday ? 5000 : 3500); 
@@ -344,19 +342,19 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
 
                             {/* 2. The Letter Inside (Strictly Masked) */}
                             <motion.div 
-                                className={`absolute bottom-4 w-[90%] h-[90%] ${theme.paperColor} rounded-sm shadow-md z-20 flex flex-col p-6 items-center border border-black/5`}
-                                initial={{ y: 20 }} // Start slightly tucked in
+                                className={`absolute w-[90%] h-[85%] ${theme.paperColor} rounded-sm shadow-md z-20 flex flex-col p-6 items-center border border-black/5`}
+                                initial={{ y: 60 }} // Start DEEP in the pocket
                                 animate={step === 'OPENING' ? { 
                                     y: -300, 
                                     scale: 1.1,
                                     rotate: [0, -2, 2, 0],
                                     zIndex: 50, // Moves above everything ONLY after leaving
                                     transition: { 
-                                        y: { duration: 2.0, ease: "easeInOut", delay: 1.0 }, // Wait for flap
-                                        scale: { duration: 2.0, delay: 1.0 },
-                                        zIndex: { delay: 2.5 } // Ensure it's fully out before z-index switch
+                                        y: { duration: 1.5, ease: "easeInOut", delay: 1.0 }, // Wait for flap
+                                        scale: { duration: 1.5, delay: 1.0 },
+                                        zIndex: { delay: 2.2 } // Ensure it's fully out before z-index switch
                                     } 
-                                } : { y: 20, zIndex: 20 }}
+                                } : { y: 60, zIndex: 20 }}
                             >
                                 <div className="w-full h-full opacity-30 overflow-hidden text-[6px] md:text-[8px] leading-relaxed select-none">
                                     {data.content}
@@ -380,7 +378,7 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
                                 style={{ clipPath: 'polygon(0 0, 100% 0, 50% 100%)', backfaceVisibility: 'visible' }}
                                 initial={{ rotateX: 0 }}
                                 animate={step === 'OPENING' ? { rotateX: 180, zIndex: 0 } : { rotateX: 0 }}
-                                transition={{ duration: 1.0, ease: "easeInOut" }}
+                                transition={{ duration: 0.8, ease: "easeInOut" }}
                             >
                                 <motion.div 
                                     animate={step === 'OPENING' ? { opacity: 0 } : { opacity: 1 }}
