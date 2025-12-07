@@ -39,6 +39,18 @@ export enum RelationshipType {
   OTHER = 'OTHER'
 }
 
+export type CouponStyle = 'GOLD' | 'SILVER' | 'ROSE' | 'BLUE';
+export type RedemptionMethod = 'WHATSAPP' | 'EMAIL';
+
+export interface CouponData {
+  title: string;
+  style: CouponStyle;
+  redemptionMethod: RedemptionMethod;
+  senderWhatsApp?: string; // Full number including country code
+  senderEmail?: string;
+  secretCode?: string;
+}
+
 export interface ThemeConfig {
   id: ThemeType;
   name: string;
@@ -49,24 +61,10 @@ export interface ThemeConfig {
   fontFamily: string;
   bgGradient: string;
   paperColor: string;
+  paperHex: string; // Hex code for SVG generation
   envelopeColor: string;
   musicUrl: string;
   previewColor: string;
-  paperHex: string; // Required for Image Generation (SVG fill)
-}
-
-export type RedemptionMethod = 'WHATSAPP' | 'EMAIL';
-
-export type CouponStyle = 'GOLD' | 'SILVER' | 'ROSE' | 'BLUE';
-
-export interface CouponData {
-  title: string;
-  style: CouponStyle;
-  redemptionMethod: RedemptionMethod;
-  senderWhatsApp?: string;
-  senderEmail?: string;
-  secretCode?: string;
-  // Validity removed as requested
 }
 
 export interface LetterData {

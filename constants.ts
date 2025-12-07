@@ -44,17 +44,15 @@ const MUSIC_URLS = {
 };
 
 export const COUNTRY_CODES = [
-  { code: '+234', flag: '🇳🇬' }, 
-  { code: '+1', flag: '🇺🇸' },
-  { code: '+44', flag: '🇬🇧' },
-  { code: '+233', flag: '🇬🇭' },
-  { code: '+27', flag: '🇿🇦' },
-  { code: '+254', flag: '🇰🇪' },
-  { code: '+91', flag: '🇮🇳' },
-  { code: '+86', flag: '🇨🇳' },
-  { code: '+81', flag: '🇯🇵' },
-  { code: '+49', flag: '🇩🇪' },
-  { code: '+33', flag: '🇫🇷' },
+  { code: '+234', label: '🇳🇬 +234' },
+  { code: '+1', label: '🇺🇸 +1' },
+  { code: '+44', label: '🇬🇧 +44' },
+  { code: '+233', label: '🇬🇭 +233' },
+  { code: '+27', label: '🇿🇦 +27' },
+  { code: '+91', label: '🇮🇳 +91' },
+  { code: '+254', label: '🇰🇪 +254' },
+  { code: '+971', label: '🇦🇪 +971' },
+  { code: '+1', label: '🇨🇦 +1' },
 ];
 
 export const THEMES: Record<ThemeType, ThemeConfig> = {
@@ -87,7 +85,7 @@ export const THEMES: Record<ThemeType, ThemeConfig> = {
     paperHex: "#f0fdf4",
     envelopeColor: "bg-red-800",
     musicUrl: MUSIC_URLS.HOLLY,
-    previewColor: "#14532d"
+    previewColor: "#14532d" 
   },
   [ThemeType.GINGERBREAD]: {
     id: ThemeType.GINGERBREAD,
@@ -98,11 +96,11 @@ export const THEMES: Record<ThemeType, ThemeConfig> = {
     accentColor: "bg-amber-600",
     fontFamily: "font-casual",
     bgGradient: "bg-gradient-to-br from-amber-900 via-orange-900 to-brown-900",
-    paperColor: "bg-[#fff8e1]",
+    paperColor: "bg-[#fff8e1]", 
     paperHex: "#fff8e1",
-    envelopeColor: "bg-[#8B4513]",
+    envelopeColor: "bg-[#8B4513]", 
     musicUrl: MUSIC_URLS.GINGERBREAD,
-    previewColor: "#92400e"
+    previewColor: "#92400e" 
   },
   [ThemeType.FROST]: {
     id: ThemeType.FROST,
@@ -117,7 +115,7 @@ export const THEMES: Record<ThemeType, ThemeConfig> = {
     paperHex: "#ffffff",
     envelopeColor: "bg-cyan-200",
     musicUrl: MUSIC_URLS.FROST,
-    previewColor: "#a5f3fc"
+    previewColor: "#a5f3fc" 
   },
 
   // --- ROMANTIC ---
