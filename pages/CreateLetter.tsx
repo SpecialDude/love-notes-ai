@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Wand2, Copy, Check, Eye, Heart, Loader2, Globe, Lock, Download, Calendar, Clock, ChevronRight, Gift, Ticket, MessageCircle, Mail, Key, Utensils, Clapperboard } from 'lucide-react';
+import { Sparkles, Wand2, Copy, Check, Eye, Heart, Loader2, Globe, Lock, Download, Calendar, Clock, ChevronRight, Gift, Ticket, MessageCircle, Mail, Key } from 'lucide-react';
 import { ThemeType, RelationshipType, LetterData, ThemeCategory, CouponStyle, RedemptionMethod } from '../types';
 import { THEMES, COUNTRY_CODES } from '../constants';
 import { generateOrEnhanceMessage, suggestTheme } from '../services/gemini';
@@ -281,10 +281,12 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
   const filteredThemes = Object.values(THEMES).filter(t => t.category === activeCategory);
 
   const couponPresets = [
-    { label: "Dinner Date", icon: <Utensils size={12} />, text: "Romantic Dinner Date" },
-    { label: "Movie Night", icon: <Clapperboard size={12} />, text: "Movie Night Choice" },
-    { label: "Massage", icon: <Sparkles size={12} />, text: "Relaxing Massage" },
-    { label: "Gift Card", icon: <Gift size={12} />, text: "Amazon Gift Card" },
+    { emoji: "🍽️", text: "Romantic Dinner" },
+    { emoji: "🎬", text: "Movie Night" },
+    { emoji: "💆‍♀️", text: "Free Massage" },
+    { emoji: "🎁", text: "Amazon Gift Card" },
+    { emoji: "🍕", text: "Pizza Night" },
+    { emoji: "🥺", text: "Forgiveness" },
   ];
 
   return (
@@ -445,11 +447,11 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
                                     <div className="flex flex-wrap gap-2 mt-2">
                                         {couponPresets.map((preset) => (
                                             <button
-                                                key={preset.label}
+                                                key={preset.text}
                                                 onClick={() => setCouponTitle(preset.text)}
                                                 className="px-2 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-md text-[10px] text-white/80 transition-colors flex items-center gap-1.5"
                                             >
-                                                {preset.icon} {preset.label}
+                                                <span>{preset.emoji}</span> {preset.text}
                                             </button>
                                         ))}
                                     </div>
