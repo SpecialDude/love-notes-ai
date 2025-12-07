@@ -59,7 +59,9 @@ export type CouponStyle = 'GOLD' | 'SILVER' | 'ROSE' | 'BLUE';
 export interface CouponData {
   title: string;
   style: CouponStyle;
-  senderWhatsApp?: string; // For direct message redemption
+  redemptionMethod?: 'WHATSAPP' | 'EMAIL'; // New field
+  senderWhatsApp?: string; // For direct message redemption (Full number with country code)
+  senderEmail?: string;    // For email redemption
   secretCode?: string;     // For Amazon codes, gift card links, etc.
   redemptionLink?: string; // Optional direct link
 }

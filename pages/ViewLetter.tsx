@@ -1,6 +1,7 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Eye, Heart, Lock, Gift, Ticket, Download, MessageCircle, Copy, Check } from 'lucide-react';
+import { ArrowLeft, Eye, Heart, Lock, Gift, Ticket, Download, MessageCircle, Copy, Check, Mail, X, Image as ImageIcon } from 'lucide-react';
 import { LetterData, ThemeType, ThemeCategory } from '../types';
 import { THEMES } from '../constants';
 import { incrementViewCount, toggleLike } from '../services/firebase';
@@ -209,6 +210,8 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
   
   // Coupon State
   const [isCouponTorn, setIsCouponTorn] = useState(false);
+  const [showRedeemModal, setShowRedeemModal] = useState(false);
+  const [couponImg, setCouponImg] = useState<string | null>(null);
   const couponRef = useRef<HTMLDivElement>(null);
   
   // Time Capsule State
@@ -349,10 +352,11 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
     }
   };
 
-  const handleRedeemCoupon = async () => {
+  // 1. Trigger Animation
+  const handleTearCoupon = async () => {
      if (!data.coupon || isCouponTorn) return;
      
-     setIsCouponTorn(true);
+     setIsCouponTorn(true); // Triggers animation
      
      // Celebration Confetti
      confetti({
@@ -363,33 +367,50 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
         shapes: ['star']
      });
      
-     // Generate Image for download
+     // 2. Generate Image for Modal
      if (couponRef.current) {
          try {
+             // We need to wait for the animation to start so we don't capture it mid-air if possible, 
+             // but actually we want to capture the INTACT coupon usually, or the Torn part.
+             // Strategy: We will render a hidden "Clean" version of the coupon in the modal to capture, or just capture the container.
+             // For simplicity, let's capture the current ref before it disappears completely or use the ref content.
              const canvas = await html2canvas(couponRef.current, { backgroundColor: null, scale: 2 });
-             const link = document.createElement('a');
-             link.download = `LoveCoupon-${data.recipientName}.png`;
-             link.href = canvas.toDataURL();
-             link.click();
-             showToast("Ticket downloaded! 🎟️", "success");
+             setCouponImg(canvas.toDataURL());
          } catch (e) {
              console.error("Image gen failed", e);
          }
      }
-
-     const coupon = data.coupon;
-     const message = `Hey! I am officially redeeming my Love Coupon for: ${coupon.title} 🎟️✨${coupon.secretCode ? ` (Code: ${coupon.secretCode})` : ''}`;
      
-     // Open WhatsApp if number provided, else generic share
-     if (coupon.senderWhatsApp) {
-         setTimeout(() => {
-            window.open(`https://wa.me/${coupon.senderWhatsApp}?text=${encodeURIComponent(message)}`, '_blank');
-         }, 1500);
+     // 3. Open Modal after short delay for animation
+     setTimeout(() => setShowRedeemModal(true), 1000);
+  };
+
+  const handleSendRedemption = () => {
+     if (!data.coupon) return;
+     
+     const coupon = data.coupon;
+     const message = `Hey! I'm officially redeeming this special coupon for: ${coupon.title}! This is such a thoughtful gift, thank you! ✨${coupon.secretCode ? ` (Code: ${coupon.secretCode})` : ''}`;
+     
+     if (coupon.redemptionMethod === 'EMAIL' && coupon.senderEmail) {
+         window.open(`mailto:${coupon.senderEmail}?subject=Redeeming Love Coupon: ${coupon.title}&body=${encodeURIComponent(message)}`, '_blank');
+     } else if (coupon.senderWhatsApp) {
+         window.open(`https://wa.me/${coupon.senderWhatsApp}?text=${encodeURIComponent(message)}`, '_blank');
      } else {
-         setTimeout(() => {
-            window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
-         }, 1500);
+         // Fallback to WhatsApp general share
+         window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
      }
+     
+     setShowRedeemModal(false);
+  };
+  
+  const handleDownloadImage = () => {
+      if (couponImg) {
+         const link = document.createElement('a');
+         link.download = `LoveCoupon-${data.recipientName}.png`;
+         link.href = couponImg;
+         link.click();
+         showToast("Image saved!", "success");
+      }
   };
 
   const theme = THEMES[data.theme || ThemeType.VELVET];
@@ -523,7 +544,7 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
                                             ${data.coupon.style === 'ROSE' ? 'bg-gradient-to-br from-rose-50 via-rose-100 to-rose-50 border border-rose-300 text-rose-900' : ''}
                                             ${data.coupon.style === 'BLUE' ? 'bg-gradient-to-br from-blue-50 via-blue-100 to-blue-50 border border-blue-300 text-blue-900' : ''}
                                         `}
-                                        onClick={handleRedeemCoupon}
+                                        onClick={handleTearCoupon}
                                         ref={couponRef}
                                     >
                                         {/* Stub (Top Part) */}
@@ -537,22 +558,27 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
                                             </div>
                                         </div>
 
-                                        {/* Perforation Line */}
-                                        <div className="relative h-0 border-t-2 border-dashed border-black/20 -mt-[1px] z-10">
-                                            <div className="absolute -left-2 -top-2 w-4 h-4 rounded-full bg-white" />
-                                            <div className="absolute -right-2 -top-2 w-4 h-4 rounded-full bg-white" />
-                                        </div>
+                                        {/* Jagged Edge Line */}
+                                        <div 
+                                          className="relative h-4 bg-transparent z-10 -mt-2 w-full" 
+                                          style={{ 
+                                            background: `linear-gradient(45deg, transparent 33.333%, #000 33.333%, #000 66.667%, transparent 66.667%), linear-gradient(-45deg, transparent 33.333%, #000 33.333%, #000 66.667%, transparent 66.667%)`,
+                                            backgroundSize: '12px 20px',
+                                            backgroundPosition: '0 -10px',
+                                            opacity: 0.1
+                                          }} 
+                                        />
 
                                         {/* Ticket (Bottom Part - Tears Away) */}
                                         <motion.div 
                                             className="p-6 flex flex-col items-center text-center gap-2 bg-white/20 backdrop-blur-sm"
                                             animate={isCouponTorn ? { 
-                                                rotate: 15, 
-                                                y: 100, 
-                                                opacity: 0, 
+                                                rotate: [0, -5, -5, 45],
+                                                y: [0, 10, 10, 600],
+                                                opacity: [1, 1, 1, 0],
                                                 pointerEvents: 'none'
                                             } : {}}
-                                            transition={{ duration: 0.8, ease: "easeIn" }}
+                                            transition={{ duration: 1.0, times: [0, 0.1, 0.3, 1], ease: "easeInOut" }}
                                             style={{ transformOrigin: "top left" }}
                                         >
                                             <h3 className="font-serif text-2xl font-bold leading-tight">{data.coupon.title}</h3>
@@ -563,44 +589,67 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
                                             </div>
                                         </motion.div>
                                     </div>
-
-                                    {/* Reveal Message (Underneath) */}
-                                    {isCouponTorn && (
-                                        <motion.div 
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            className="absolute inset-0 flex flex-col items-center justify-center text-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 p-6"
-                                        >
-                                            <p className="text-green-600 font-bold mb-2 flex items-center gap-2"><Check size={16} /> Redeemed!</p>
-                                            <p className="text-sm text-gray-600 mb-4">You've claimed this gift.</p>
-                                            
-                                            {data.coupon.secretCode && (
-                                                <div className="mb-4 bg-gray-200 px-4 py-2 rounded-md font-mono text-sm border border-gray-300 select-all">
-                                                    <span className="text-xs text-gray-500 block mb-1 uppercase tracking-widest">Secret Code</span>
-                                                    {data.coupon.secretCode}
-                                                </div>
-                                            )}
-                                            
-                                            <div className="flex gap-2">
-                                                {data.coupon.redemptionLink && (
-                                                    <a href={data.coupon.redemptionLink} target="_blank" rel="noreferrer" className="text-xs bg-blue-500 text-white px-3 py-2 rounded-md hover:bg-blue-600 flex items-center gap-1">
-                                                        <Gift size={12} /> View Gift
-                                                    </a>
-                                                )}
-                                                {data.coupon.senderWhatsApp && (
-                                                     <a 
-                                                        href={`https://wa.me/${data.coupon.senderWhatsApp}?text=${encodeURIComponent(`I am redeeming: ${data.coupon.title}`)}`}
-                                                        target="_blank"
-                                                        rel="noreferrer"
-                                                        className="text-xs bg-green-500 text-white px-3 py-2 rounded-md hover:bg-green-600 flex items-center gap-1"
-                                                     >
-                                                        <MessageCircle size={12} /> WhatsApp
-                                                     </a>
-                                                )}
-                                            </div>
-                                            <p className="text-[10px] text-gray-400 mt-4">Image saved to downloads</p>
-                                        </motion.div>
-                                    )}
+                                    
+                                    {/* --- REDEMPTION MODAL --- */}
+                                    <AnimatePresence>
+                                        {showRedeemModal && (
+                                            <motion.div 
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                exit={{ opacity: 0 }}
+                                                className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/5 backdrop-blur-sm"
+                                                onClick={() => setShowRedeemModal(false)}
+                                            >
+                                                <motion.div 
+                                                    initial={{ scale: 0.9, opacity: 0 }}
+                                                    animate={{ scale: 1, opacity: 1 }}
+                                                    className="bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl p-6 w-full max-w-sm text-center border border-white/40"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 text-green-600">
+                                                        <Gift size={24} />
+                                                    </div>
+                                                    
+                                                    <h3 className="text-xl font-bold text-gray-800 mb-2 font-serif">Coupon Redeemed!</h3>
+                                                    <p className="text-sm text-gray-500 mb-6">Send this to {data.senderName} to claim your gift.</p>
+                                                    
+                                                    {couponImg && (
+                                                        <div className="mb-6 rounded-lg overflow-hidden border border-gray-200 shadow-inner">
+                                                            <img src={couponImg} alt="Coupon" className="w-full h-auto" />
+                                                        </div>
+                                                    )}
+                                                    
+                                                    {data.coupon.secretCode && (
+                                                        <div className="mb-6 bg-gray-100 p-3 rounded-lg border border-dashed border-gray-300">
+                                                            <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Secret Code</p>
+                                                            <p className="font-mono font-bold text-lg select-all">{data.coupon.secretCode}</p>
+                                                        </div>
+                                                    )}
+                                                    
+                                                    <div className="flex flex-col gap-3">
+                                                        <button 
+                                                            onClick={handleSendRedemption}
+                                                            className={`w-full py-3 rounded-xl font-bold text-white shadow-lg flex items-center justify-center gap-2 ${data.coupon.redemptionMethod === 'EMAIL' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-green-500 hover:bg-green-600'}`}
+                                                        >
+                                                            {data.coupon.redemptionMethod === 'EMAIL' ? <Mail size={18} /> : <MessageCircle size={18} />}
+                                                            Send to {data.coupon.redemptionMethod === 'EMAIL' ? 'Email' : 'WhatsApp'}
+                                                        </button>
+                                                        
+                                                        <button 
+                                                            onClick={handleDownloadImage}
+                                                            className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold flex items-center justify-center gap-2"
+                                                        >
+                                                            <Download size={18} /> Save Image
+                                                        </button>
+                                                    </div>
+                                                    
+                                                    <button onClick={() => setShowRedeemModal(false)} className="mt-4 text-xs text-gray-400 hover:text-gray-600">
+                                                        Close
+                                                    </button>
+                                                </motion.div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
                                 </div>
                             )}
 

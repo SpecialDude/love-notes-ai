@@ -19,6 +19,22 @@ const getMusicEnv = (key: string, defaultUrl: string): string => {
   return defaultUrl;
 };
 
+// WhatsApp Country Codes
+export const COUNTRY_CODES = [
+  { code: '234', label: '🇳🇬 Nigeria (+234)' },
+  { code: '1', label: '🇺🇸/🇨🇦 US/Canada (+1)' },
+  { code: '44', label: '🇬🇧 UK (+44)' },
+  { code: '233', label: '🇬🇭 Ghana (+233)' },
+  { code: '27', label: '🇿🇦 South Africa (+27)' },
+  { code: '91', label: '🇮🇳 India (+91)' },
+  { code: '254', label: '🇰🇪 Kenya (+254)' },
+  { code: '61', label: '🇦🇺 Australia (+61)' },
+  { code: '49', label: '🇩🇪 Germany (+49)' },
+  { code: '33', label: '🇫🇷 France (+33)' },
+  { code: '971', label: '🇦🇪 UAE (+971)' },
+  { code: '0', label: '🌍 Other (Enter full)' }
+];
+
 // Default Music Links (Internet Archive MP3s)
 const CLASSIC_PIANO = "https://ia800305.us.archive.org/3/items/LisztLiebestraumNo3/Liszt_Liebestraum_No3.mp3";
 const JAZZ = "https://ia800303.us.archive.org/34/items/ScottJoplinTheEntertainer1902/Scott%20Joplin%20-%20The%20Entertainer%20%281902%29.mp3";

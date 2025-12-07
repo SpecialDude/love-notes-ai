@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Wand2, Copy, Check, Eye, Heart, Loader2, Globe, Lock, Download, Calendar, Clock, ChevronRight, Ticket, Gift, MessageCircle, Link as LinkIcon, Key } from 'lucide-react';
+import { Sparkles, Wand2, Copy, Check, Eye, Heart, Loader2, Globe, Lock, Download, Calendar, Clock, ChevronRight, Ticket, Gift, MessageCircle, Link as LinkIcon, Key, Mail } from 'lucide-react';
 import { ThemeType, RelationshipType, LetterData, ThemeCategory, CouponData, CouponStyle } from '../types';
-import { THEMES } from '../constants';
+import { THEMES, COUNTRY_CODES } from '../constants';
 import { generateOrEnhanceMessage, suggestTheme } from '../services/gemini';
 import { saveLetterToCloud } from '../services/firebase';
 import { getRandomMusicUrl } from '../utils/music';
@@ -37,7 +37,12 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
   const [hasCoupon, setHasCoupon] = useState(!!initialData?.coupon);
   const [couponTitle, setCouponTitle] = useState(initialData?.coupon?.title || '');
   const [couponStyle, setCouponStyle] = useState<CouponStyle>(initialData?.coupon?.style || 'GOLD');
-  const [senderWhatsApp, setSenderWhatsApp] = useState(initialData?.coupon?.senderWhatsApp || '');
+  
+  // Redemption Methods
+  const [redemptionMethod, setRedemptionMethod] = useState<'WHATSAPP' | 'EMAIL'>(initialData?.coupon?.redemptionMethod || 'WHATSAPP');
+  const [countryCode, setCountryCode] = useState('234'); // Default Nigeria
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [senderEmail, setSenderEmail] = useState(initialData?.coupon?.senderEmail || '');
   const [secretCode, setSecretCode] = useState(initialData?.coupon?.secretCode || '');
 
   const [generatedLink, setGeneratedLink] = useState('');
@@ -48,6 +53,22 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
   
   // PWA Install State
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  // Parse initial phone number into code and number
+  useEffect(() => {
+    if (initialData?.coupon?.senderWhatsApp) {
+        // Simple logic to extract code if it matches one of our list, else put everything in number
+        const full = initialData.coupon.senderWhatsApp;
+        const found = COUNTRY_CODES.find(c => full.startsWith(c.code));
+        if (found) {
+            setCountryCode(found.code);
+            setPhoneNumber(full.substring(found.code.length));
+        } else {
+            setCountryCode('0');
+            setPhoneNumber(full);
+        }
+    }
+  }, [initialData]);
 
   // Set Page Title and PWA Listener
   useEffect(() => {
@@ -78,8 +99,9 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
             setHasCoupon(true);
             setCouponTitle(initialData.coupon.title);
             setCouponStyle(initialData.coupon.style);
-            setSenderWhatsApp(initialData.coupon.senderWhatsApp || '');
             setSecretCode(initialData.coupon.secretCode || '');
+            setRedemptionMethod(initialData.coupon.redemptionMethod || 'WHATSAPP');
+            setSenderEmail(initialData.coupon.senderEmail || '');
         }
         setAiMode(initialData.content.length > 50 ? 'POLISH' : 'DRAFT');
         // Update category based on initial theme
@@ -140,10 +162,19 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
 
     let couponData: CouponData | undefined = undefined;
     if (hasCoupon && couponTitle) {
+        // Construct full number
+        let fullWhatsApp = undefined;
+        if (redemptionMethod === 'WHATSAPP' && phoneNumber) {
+             const cleanNum = phoneNumber.replace(/\D/g, '');
+             fullWhatsApp = countryCode === '0' ? cleanNum : `${countryCode}${cleanNum}`;
+        }
+
         couponData = {
             title: couponTitle,
             style: couponStyle,
-            senderWhatsApp: senderWhatsApp || undefined,
+            redemptionMethod,
+            senderWhatsApp: fullWhatsApp,
+            senderEmail: redemptionMethod === 'EMAIL' ? senderEmail : undefined,
             secretCode: secretCode || undefined
         };
     }
@@ -432,19 +463,63 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
                                     </div>
                                 </div>
                                 
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-white/70 uppercase tracking-wider ml-1">Redemption Method</label>
+                                    <div className="flex bg-black/20 p-1 rounded-lg">
+                                        <button 
+                                            onClick={() => setRedemptionMethod('WHATSAPP')}
+                                            className={`flex-1 py-1.5 text-xs font-bold rounded-md flex items-center justify-center gap-2 transition-all ${redemptionMethod === 'WHATSAPP' ? 'bg-green-500/80 text-white shadow' : 'text-white/50 hover:text-white/80'}`}
+                                        >
+                                            <MessageCircle size={12} /> WhatsApp
+                                        </button>
+                                        <button 
+                                            onClick={() => setRedemptionMethod('EMAIL')}
+                                            className={`flex-1 py-1.5 text-xs font-bold rounded-md flex items-center justify-center gap-2 transition-all ${redemptionMethod === 'EMAIL' ? 'bg-blue-500/80 text-white shadow' : 'text-white/50 hover:text-white/80'}`}
+                                        >
+                                            <Mail size={12} /> Email
+                                        </button>
+                                    </div>
+                                </div>
+
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-white/70 uppercase tracking-wider ml-1 flex items-center gap-1">
-                                            <MessageCircle size={10} /> WhatsApp Number (Optional)
-                                        </label>
-                                        <input 
-                                            value={senderWhatsApp}
-                                            onChange={(e) => setSenderWhatsApp(e.target.value)}
-                                            placeholder="e.g. 15550001234"
-                                            className="w-full bg-black/20 border border-white/20 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-white/30"
-                                        />
-                                        <p className="text-[10px] text-white/40">For direct redemption messages.</p>
-                                     </div>
+                                     {redemptionMethod === 'WHATSAPP' ? (
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold text-white/70 uppercase tracking-wider ml-1 flex items-center gap-1">
+                                                <MessageCircle size={10} /> WhatsApp Number
+                                            </label>
+                                            <div className="flex gap-2">
+                                                <select 
+                                                    value={countryCode}
+                                                    onChange={(e) => setCountryCode(e.target.value)}
+                                                    className="bg-black/20 border border-white/20 rounded-lg px-2 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white/30 max-w-[100px]"
+                                                >
+                                                    {COUNTRY_CODES.map(c => (
+                                                        <option key={c.code} value={c.code} className="bg-gray-800">{c.label}</option>
+                                                    ))}
+                                                </select>
+                                                <input 
+                                                    value={phoneNumber}
+                                                    onChange={(e) => setPhoneNumber(e.target.value)}
+                                                    placeholder="812 345 6789"
+                                                    className="flex-1 bg-black/20 border border-white/20 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-white/30"
+                                                />
+                                            </div>
+                                            <p className="text-[10px] text-white/40">For direct redemption messages.</p>
+                                        </div>
+                                     ) : (
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold text-white/70 uppercase tracking-wider ml-1 flex items-center gap-1">
+                                                <Mail size={10} /> Email Address
+                                            </label>
+                                            <input 
+                                                value={senderEmail}
+                                                onChange={(e) => setSenderEmail(e.target.value)}
+                                                placeholder="you@example.com"
+                                                className="w-full bg-black/20 border border-white/20 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-white/30"
+                                            />
+                                        </div>
+                                     )}
+
                                      <div className="space-y-2">
                                         <label className="text-xs font-bold text-white/70 uppercase tracking-wider ml-1 flex items-center gap-1">
                                             <Key size={10} /> Secret Gift Code/Link
