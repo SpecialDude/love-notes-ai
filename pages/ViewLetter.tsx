@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Eye, Heart, Lock, Gift, Ticket, Download, MessageCircle, Copy, Check, Mail, X, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Eye, Heart, Lock, Gift, Ticket, Download, MessageCircle, Copy, Check, Mail, X, Image as ImageIcon, Share2, Loader2 } from 'lucide-react';
 import { LetterData, ThemeType, ThemeCategory } from '../types';
 import { THEMES } from '../constants';
 import { incrementViewCount, toggleLike } from '../services/firebase';
@@ -38,7 +38,7 @@ const StandardEnvelope: React.FC<{ data: LetterData, onOpen: () => void, step: s
                     initial={{ y: 0 }}
                     animate={step === 'OPENING' ? { 
                         y: -200, 
-                        zIndex: 0, // Moves behind as it exits in legacy code, but we want it visible
+                        zIndex: 0, // Moves behind as it exits in legacy code
                         boxShadow: "0 0 50px rgba(255,255,255,0.8)" // THE GLOW UPDATE
                     } : { y: 0 }}
                     transition={{ duration: 1.5, ease: "easeInOut", delay: 0.3 }}
@@ -105,22 +105,21 @@ const HolidayGiftBox: React.FC<{ data: LetterData, onOpen: () => void, step: str
                 {/* --- LAYER 2: The Letter (Sandwiched) --- */}
                 <motion.div 
                     className={`absolute left-[5%] top-[5%] w-[90%] h-[90%] ${theme.paperColor} rounded-sm shadow-lg flex items-center justify-center p-4`}
-                    // Initial State: Hidden (opacity 0), Middle Depth (z: 0), Normal Size
                     initial={{ y: 0, scale: 0.9, opacity: 0, z: 0 }}
                     animate={step === 'OPENING' ? { 
-                        y: -180, // Slides UP
+                        y: -180, 
                         opacity: 1,
                         scale: 1, 
                         rotateY: 0, 
-                        z: 100, // Move Forward to act as Front Layer at the end
-                        boxShadow: "0 0 50px rgba(255,215,0, 0.6)", // Magical Glow
+                        z: 100, 
+                        boxShadow: "0 0 50px rgba(255,215,0, 0.6)",
                     } : { opacity: 0, z: 0 }} 
                     transition={{ 
-                        opacity: { delay: 1.5, duration: 0.5 }, // Fade in only when lid opens
-                        y: { delay: 1.5, duration: 2.0, ease: "easeInOut" }, // Rise slowly
+                        opacity: { delay: 1.5, duration: 0.5 },
+                        y: { delay: 1.5, duration: 2.0, ease: "easeInOut" },
                         scale: { delay: 1.5, duration: 2.0 },
                         boxShadow: { delay: 1.5, duration: 2.0 },
-                        z: { delay: 3.2, duration: 0 } // JUMP to front only after fully risen
+                        z: { delay: 3.2, duration: 0 }
                     }}
                     style={{ transformStyle: 'preserve-3d' }}
                 >
@@ -212,6 +211,7 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
   const [isCouponTorn, setIsCouponTorn] = useState(false);
   const [showRedeemModal, setShowRedeemModal] = useState(false);
   const [couponImg, setCouponImg] = useState<string | null>(null);
+  const [isSharing, setIsSharing] = useState(false);
   
   // Time Capsule State
   const [isLocked, setIsLocked] = useState(false);
@@ -220,8 +220,6 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
   useEffect(() => {
     if (data?.recipientName) {
       document.title = `💌 For ${data.recipientName} | LoveNotes`;
-    } else {
-      document.title = "You have a new message 💌";
     }
     
     // Check Lock Status
@@ -263,7 +261,6 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
             incrementViewCount(data.id);
             setViewCount((v) => v + 1);
             
-            // Check Like Status
             const likedSet = getLocalLikedIds();
             setIsLiked(likedSet.has(data.id));
         }
@@ -278,8 +275,6 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
     setStep('OPENING');
     
     const isHoliday = THEMES[data.theme].category === ThemeCategory.HOLIDAY;
-    
-    // Adjust timing based on type
     const confettiDelay = isHoliday ? 2500 : 500;
     const readDelay = isHoliday ? 4000 : 2500;
 
@@ -351,7 +346,7 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
     }
   };
 
-  // 1. Trigger Animation
+  // 1. Trigger Animation & Generate Image
   const handleTearCoupon = async () => {
      if (!data.coupon || isCouponTorn) return;
      
@@ -366,52 +361,86 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
         shapes: ['star']
      });
      
-     // 2. Generate Image for Modal
-     // Use hidden receipt which contains the signature and full coupon details
+     // 2. Generate Image for Modal using the HIDDEN VISUAL CLONE
      try {
-         const hiddenRef = document.getElementById('hidden-coupon-receipt');
+         const hiddenRef = document.getElementById('hidden-coupon-clone');
          if (hiddenRef) {
-             const canvas = await html2canvas(hiddenRef, { backgroundColor: null, scale: 2 });
+             const canvas = await html2canvas(hiddenRef, { 
+                 backgroundColor: null, 
+                 scale: 3, // High Res
+                 logging: false 
+             });
              setCouponImg(canvas.toDataURL());
          }
      } catch (e) {
          console.error("Image gen failed", e);
      }
      
-     // 3. Open Modal after delay for animation to complete/slide out
-     setTimeout(() => setShowRedeemModal(true), 1500);
+     // 3. Open Modal after tear animation completes
+     setTimeout(() => setShowRedeemModal(true), 2500);
   };
 
-  const handleSendRedemption = () => {
+  const getRedemptionMessage = () => {
+      if (!data.coupon) return '';
+      return `Hey! I'm officially redeeming this special coupon for: ${data.coupon.title}! This is such a thoughtful gift, thank you! ✨${data.coupon.secretCode ? ` (Code: ${data.coupon.secretCode})` : ''}`;
+  };
+
+  const handleShareRedemption = async () => {
      if (!data.coupon) return;
+     setIsSharing(true);
+
+     const message = getRedemptionMessage();
      
-     const coupon = data.coupon;
-     const message = `Hey! I'm officially redeeming this special coupon for: ${coupon.title}! This is such a thoughtful gift, thank you! ✨${coupon.secretCode ? ` (Code: ${coupon.secretCode})` : ''}`;
+     // Mobile Share with Image (Web Share API Level 2)
+     if (couponImg && navigator.share) {
+         try {
+             const blob = await (await fetch(couponImg)).blob();
+             const file = new File([blob], `LoveCoupon-${data.recipientName}.png`, { type: 'image/png' });
+             
+             if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                 await navigator.share({
+                     title: 'Redeeming Love Coupon',
+                     text: message,
+                     files: [file]
+                 });
+                 setIsSharing(false);
+                 setShowRedeemModal(false);
+                 return;
+             }
+         } catch (e) {
+             console.warn("Share API failed", e);
+         }
+     }
      
-     if (coupon.redemptionMethod === 'EMAIL' && coupon.senderEmail) {
-         window.open(`mailto:${coupon.senderEmail}?subject=Redeeming Love Coupon: ${coupon.title}&body=${encodeURIComponent(message)}`, '_blank');
-     } else if (coupon.senderWhatsApp) {
-         window.open(`https://wa.me/${coupon.senderWhatsApp}?text=${encodeURIComponent(message)}`, '_blank');
+     // Fallback: Direct Link (Email/WhatsApp) logic
+     if (data.coupon.redemptionMethod === 'EMAIL' && data.coupon.senderEmail) {
+         window.open(`mailto:${data.coupon.senderEmail}?subject=Redeeming Love Coupon: ${data.coupon.title}&body=${encodeURIComponent(message)}`, '_blank');
+     } else if (data.coupon.senderWhatsApp) {
+         // WhatsApp text only (Image must be attached manually by user if downloaded)
+         // Note: Automated image attachment isn't supported by wa.me links
+         window.open(`https://wa.me/${data.coupon.senderWhatsApp}?text=${encodeURIComponent(message)}`, '_blank');
+         
+         // Prompt download if image exists so they can attach it
+         if (couponImg) {
+             const link = document.createElement('a');
+             link.download = `LoveCoupon-${data.recipientName}.png`;
+             link.href = couponImg;
+             link.click();
+             showToast("Image downloaded! Attach it to the chat.", "success");
+         }
      } else {
-         // Fallback to WhatsApp general share
          window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
      }
      
+     setIsSharing(false);
      setShowRedeemModal(false);
-  };
-  
-  const handleDownloadImage = () => {
-      if (couponImg) {
-         const link = document.createElement('a');
-         link.download = `LoveCoupon-${data.recipientName}.png`;
-         link.href = couponImg;
-         link.click();
-         showToast("Image saved!", "success");
-      }
   };
 
   const theme = THEMES[data.theme || ThemeType.VELVET];
   const isHoliday = theme.category === ThemeCategory.HOLIDAY;
+  
+  // High-Res Jagged Edge (Sawtooth)
+  const jaggedClipPath = 'polygon(0% 0%, 2% 5px, 4% 0%, 6% 5px, 8% 0%, 10% 5px, 12% 0%, 14% 5px, 16% 0%, 18% 5px, 20% 0%, 22% 5px, 24% 0%, 26% 5px, 28% 0%, 30% 5px, 32% 0%, 34% 5px, 36% 0%, 38% 5px, 40% 0%, 42% 5px, 44% 0%, 46% 5px, 48% 0%, 50% 5px, 52% 0%, 54% 5px, 56% 0%, 58% 5px, 60% 0%, 62% 5px, 64% 0%, 66% 5px, 68% 0%, 70% 5px, 72% 0%, 74% 5px, 76% 0%, 78% 5px, 80% 0%, 82% 5px, 84% 0%, 86% 5px, 88% 0%, 90% 5px, 92% 0%, 94% 5px, 96% 0%, 98% 5px, 100% 0%, 100% 100%, 0% 100%)';
 
   return (
     <div className={`min-h-screen relative overflow-hidden flex flex-col items-center justify-center ${theme.bgGradient}`}>
@@ -457,7 +486,6 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
             {step !== 'READING' && (
                 <div className="relative">
                     {isLocked ? (
-                         // LOCKED (TIME CAPSULE)
                          <motion.div 
                             initial={{ scale: 0.8, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
@@ -472,7 +500,6 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
                                 <Lock size={48} className="text-white mx-auto mb-4" />
                                 <h2 className="text-2xl font-cinematic text-white mb-2">Time Capsule</h2>
                                 <p className="text-white/60 text-sm mb-6">Locked until {new Date(data.unlockDate!).toLocaleDateString()}</p>
-                                
                                 {timeLeft && (
                                     <div className="grid grid-cols-4 gap-4 text-white">
                                         <div className="flex flex-col">
@@ -508,7 +535,6 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
                     `}>
                         {/* 1. TOP HALF OF LETTER (Date, Greeting, Content) */}
                         <div className={`relative z-20 ${theme.paperColor} ${theme.textColor} paper-texture p-8 md:p-12 pb-0 flex flex-col`}>
-                            {/* Stamp - Position updated for Mobile */}
                             <div className="absolute top-4 right-4 md:top-6 md:right-6 w-20 h-24 border-4 border-double border-current opacity-30 -rotate-6 flex items-center justify-center pointer-events-none">
                                 <div className="text-[10px] font-bold uppercase text-center leading-tight">LoveNotes<br/>Air Mail</div>
                             </div>
@@ -517,7 +543,7 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
                                 {new Date(data.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                             </div>
                             <h1 className={`text-4xl md:text-5xl mb-8 ${theme.fontFamily} font-bold shrink-0 leading-tight`}>My Dearest {data.recipientName},</h1>
-                            <div className={`text-lg md:text-2xl leading-relaxed whitespace-pre-wrap ${theme.fontFamily} opacity-95 pb-8`}>{data.content}</div>
+                            <div className={`text-lg md:text-2xl leading-relaxed whitespace-pre-wrap ${theme.fontFamily} opacity-95 pb-12`}>{data.content}</div>
                         </div>
 
                         {/* --- IF COUPON: TEARABLE BOTTOM HALF --- */}
@@ -525,37 +551,36 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
                             <div className="relative z-10">
                                 {/* Jagged Edge Visual Divider */}
                                 <div 
-                                    className={`relative z-20 w-full h-6 -mt-1 ${theme.paperColor}`}
-                                    style={{
-                                        clipPath: 'polygon(0% 0%, 5% 100%, 10% 0%, 15% 100%, 20% 0%, 25% 100%, 30% 0%, 35% 100%, 40% 0%, 45% 100%, 50% 0%, 55% 100%, 60% 0%, 65% 100%, 70% 0%, 75% 100%, 80% 0%, 85% 100%, 90% 0%, 95% 100%, 100% 0%)'
-                                    }}
+                                    className={`relative z-20 w-full h-4 -mt-1 ${theme.paperColor}`}
+                                    style={{ clipPath: jaggedClipPath }}
                                 />
                                 
                                 {/* Bottom Tear-Off Section (Coupon + Signature) */}
                                 <motion.div
                                     className={`
                                         relative ${theme.paperColor} ${theme.textColor} paper-texture 
-                                        p-8 md:p-12 pt-4 flex flex-col items-center text-center cursor-pointer group
+                                        p-8 md:p-12 pt-8 flex flex-col items-center text-center cursor-pointer group origin-top-left
                                     `}
                                     onClick={handleTearCoupon}
+                                    style={{ transformOrigin: 'top left' }}
                                     animate={isCouponTorn ? { 
-                                        rotate: -5,
-                                        x: -window.innerWidth, // Slide Left
-                                        y: 50,
+                                        rotate: -15,   // Tilt up/counter-clockwise
+                                        x: -window.innerWidth * 1.2, // Peel strictly to Left
+                                        y: 100,        // Gravity droop
                                         opacity: 0
                                     } : {}}
                                     transition={{ duration: 1.5, ease: "easeInOut" }}
-                                    style={{ transformOrigin: "top right" }}
                                 >
-                                    <div className="absolute top-0 left-0 w-full flex justify-center -mt-3">
-                                        <div className="bg-black/10 px-3 py-1 rounded-full text-[10px] uppercase tracking-widest font-bold backdrop-blur-sm group-hover:bg-black/20 transition-colors">
-                                            Tap to Tear & Redeem
+                                    {/* Tap to Tear Text */}
+                                    <div className="w-full flex justify-center mb-6">
+                                        <div className="bg-black/10 px-3 py-1 rounded-full text-[10px] uppercase tracking-widest font-bold backdrop-blur-sm group-hover:bg-black/20 transition-colors animate-pulse flex items-center gap-1">
+                                            <Ticket size={12} /> Tap to Tear & Redeem
                                         </div>
                                     </div>
 
                                     {/* The Coupon Content */}
                                     <div className={`
-                                        mt-4 w-full max-w-sm rounded-lg border-2 border-dashed border-current p-6 relative
+                                        w-full max-w-sm rounded-lg border-2 border-dashed border-current p-6 relative
                                         ${data.coupon.style === 'GOLD' ? 'bg-yellow-50/50' : ''}
                                         ${data.coupon.style === 'SILVER' ? 'bg-gray-50/50' : ''}
                                         ${data.coupon.style === 'ROSE' ? 'bg-rose-50/50' : ''}
@@ -566,11 +591,18 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
                                             <span className="text-xs uppercase tracking-widest font-bold">Love Coupon</span>
                                         </div>
                                         <h3 className="font-serif text-2xl md:text-3xl font-bold leading-tight mb-2">{data.coupon.title}</h3>
-                                        <p className="text-xs opacity-60 uppercase tracking-wider">{data.coupon.validity || "Valid Forever"}</p>
+                                        <p className="text-xs opacity-60 uppercase tracking-wider mb-2">{data.coupon.validity || "Valid Forever"}</p>
+                                        
+                                        {/* Secret Code ALWAYS VISIBLE HERE NOW */}
+                                        {data.coupon.secretCode && (
+                                            <div className="mt-3 p-2 bg-white/40 border border-current/20 rounded font-mono font-bold text-sm inline-block">
+                                                CODE: {data.coupon.secretCode}
+                                            </div>
+                                        )}
                                     </div>
 
-                                    {/* Signature (Part of the gift now) */}
-                                    <div className="mt-8 pt-6 border-t border-black/10 w-full text-center">
+                                    {/* Signature */}
+                                    <div className="mt-8 pt-6 border-t border-black/10 w-full text-right">
                                         <p className="text-sm opacity-60 mb-2 font-serif italic">Yours truly,</p>
                                         <p className={`text-3xl md:text-5xl ${theme.fontFamily} font-bold transform -rotate-2 inline-block`}>{data.senderName}</p>
                                     </div>
@@ -592,30 +624,51 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
                         )}
                     </div>
 
-                    {/* HIDDEN RECEIPT FOR IMAGE GENERATION (Contains Signature & Revealed Code) */}
+                    {/* HIDDEN CLONE FOR IMAGE GENERATION - EXACT REPLICA OF TORN PART */}
                     {data.coupon && (
-                        <div id="hidden-coupon-receipt" className="absolute top-0 left-0 w-[400px] opacity-0 pointer-events-none" style={{ zIndex: -1 }}>
+                        <div 
+                            id="hidden-coupon-clone" 
+                            className="absolute w-[400px] pointer-events-none" 
+                            style={{ 
+                                left: '-9999px', 
+                                top: 0,
+                                zIndex: -1,
+                                opacity: 1 
+                            }}
+                        >
+                            {/* Jagged Top */}
+                             <div 
+                                className={`w-full h-8 -mb-1 ${theme.paperColor}`}
+                                style={{ clipPath: jaggedClipPath, background: THEMES[data.theme].previewColor }} // Use solid color fallback if texture fails in capture
+                             />
                              <div className={`
-                                bg-white text-gray-900 p-8 flex flex-col items-center text-center border-t-8 border-gray-900
-                                ${data.coupon.style === 'GOLD' ? 'bg-yellow-50 text-yellow-900 border-yellow-600' : ''}
-                                ${data.coupon.style === 'ROSE' ? 'bg-rose-50 text-rose-900 border-rose-600' : ''}
+                                ${theme.paperColor} ${theme.textColor} paper-texture 
+                                p-8 pt-6 flex flex-col items-center text-center
                              `}>
-                                <div className="mb-4">
-                                    <span className="text-xs font-bold uppercase tracking-widest bg-black/10 px-2 py-1 rounded">Official Receipt</span>
-                                </div>
-                                <h3 className="font-serif text-3xl font-bold mb-2">{data.coupon.title}</h3>
-                                <p className="text-xs opacity-60 uppercase mb-6">{data.coupon.validity}</p>
-                                
-                                {data.coupon.secretCode && (
-                                    <div className="mb-6 p-3 bg-white/50 border border-black/10 rounded font-mono font-bold text-lg w-full">
-                                        CODE: {data.coupon.secretCode}
+                                <div className={`
+                                    w-full rounded-lg border-2 border-dashed border-current p-6 relative
+                                    ${data.coupon.style === 'GOLD' ? 'bg-yellow-50/50' : ''}
+                                    ${data.coupon.style === 'ROSE' ? 'bg-rose-50/50' : ''}
+                                `}>
+                                    <div className="flex items-center justify-center gap-2 mb-2 opacity-70">
+                                        <Gift size={16} />
+                                        <span className="text-xs uppercase tracking-widest font-bold">Love Coupon</span>
                                     </div>
-                                )}
-
-                                <div className="mt-4 pt-4 border-t border-black/10 w-full">
-                                    <p className="text-xs opacity-60 italic">Signed by</p>
-                                    <p className="text-3xl font-bold font-serif">{data.senderName}</p>
+                                    <h3 className="font-serif text-3xl font-bold leading-tight mb-2">{data.coupon.title}</h3>
+                                    <p className="text-xs opacity-60 uppercase tracking-wider mb-2">{data.coupon.validity}</p>
+                                    
+                                    {data.coupon.secretCode && (
+                                        <div className="mt-3 p-2 bg-white/60 border border-current/20 rounded font-mono font-bold text-lg inline-block">
+                                            CODE: {data.coupon.secretCode}
+                                        </div>
+                                    )}
                                 </div>
+
+                                <div className="mt-8 pt-6 border-t border-black/10 w-full text-right">
+                                    <p className="text-sm opacity-60 mb-2 font-serif italic">Yours truly,</p>
+                                    <p className={`text-4xl ${theme.fontFamily} font-bold transform -rotate-2 inline-block`}>{data.senderName}</p>
+                                </div>
+                                <div className="mt-4 opacity-30 text-[8px] uppercase tracking-widest">Sent via LoveNotes.ai</div>
                              </div>
                         </div>
                     )}
@@ -633,40 +686,47 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
                                 <motion.div 
                                     initial={{ scale: 0.9, opacity: 0 }}
                                     animate={{ scale: 1, opacity: 1 }}
-                                    className="bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl p-6 w-full max-w-sm text-center border border-white/40"
+                                    className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl p-6 w-full max-w-sm border border-white/40 max-h-[90vh] overflow-y-auto"
                                     onClick={(e) => e.stopPropagation()}
                                 >
-                                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 text-green-600">
-                                        <Gift size={24} />
-                                    </div>
+                                    <h3 className="text-xl font-bold text-gray-800 mb-4 font-serif text-center">Your Gift is Ready!</h3>
                                     
-                                    <h3 className="text-xl font-bold text-gray-800 mb-2 font-serif">Coupon Redeemed!</h3>
-                                    <p className="text-sm text-gray-500 mb-6">Send this to {data.senderName} to claim your gift.</p>
-                                    
+                                    {/* Preview Image */}
                                     {couponImg && (
-                                        <div className="mb-6 rounded-lg overflow-hidden border border-gray-200 shadow-inner">
+                                        <div className="mb-4 rounded-lg overflow-hidden border border-gray-200 shadow-md transform rotate-1">
                                             <img src={couponImg} alt="Coupon" className="w-full h-auto" />
                                         </div>
                                     )}
+
+                                    {/* Info Block */}
+                                    <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 mb-4 text-center">
+                                        {data.coupon?.secretCode && (
+                                            <div className="mb-2">
+                                                <p className="text-[10px] uppercase text-gray-400 font-bold tracking-widest">Gift Code</p>
+                                                <p className="font-mono font-bold text-gray-800 select-all">{data.coupon.secretCode}</p>
+                                            </div>
+                                        )}
+                                        <p className="text-[10px] uppercase text-gray-400 font-bold tracking-widest">Redeemed On</p>
+                                        <p className="text-gray-600 text-sm">{new Date().toLocaleDateString()}</p>
+                                    </div>
+                                    
+                                    {/* Message */}
+                                    <p className="text-sm text-gray-500 mb-2 text-center italic">"Message to sender:"</p>
+                                    <div className="p-3 bg-blue-50 text-blue-900 text-sm rounded-lg border border-blue-100 mb-6 italic">
+                                        {getRedemptionMessage()}
+                                    </div>
                                     
                                     <div className="flex flex-col gap-3">
                                         <button 
-                                            onClick={handleSendRedemption}
-                                            className={`w-full py-3 rounded-xl font-bold text-white shadow-lg flex items-center justify-center gap-2 ${data.coupon?.redemptionMethod === 'EMAIL' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-green-500 hover:bg-green-600'}`}
+                                            onClick={handleShareRedemption}
+                                            className={`w-full py-3.5 rounded-xl font-bold text-white shadow-lg flex items-center justify-center gap-2 transform active:scale-95 transition-all ${data.coupon?.redemptionMethod === 'EMAIL' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-green-500 hover:bg-green-600'}`}
                                         >
-                                            {data.coupon?.redemptionMethod === 'EMAIL' ? <Mail size={18} /> : <MessageCircle size={18} />}
-                                            Send to {data.coupon?.redemptionMethod === 'EMAIL' ? 'Email' : 'WhatsApp'}
-                                        </button>
-                                        
-                                        <button 
-                                            onClick={handleDownloadImage}
-                                            className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold flex items-center justify-center gap-2"
-                                        >
-                                            <Download size={18} /> Save Image
+                                            {isSharing ? <Loader2 className="animate-spin" /> : (data.coupon?.redemptionMethod === 'EMAIL' ? <Mail size={18} /> : <MessageCircle size={18} />)}
+                                            {data.coupon?.redemptionMethod === 'EMAIL' ? 'Send via Email' : 'Send via WhatsApp'}
                                         </button>
                                     </div>
                                     
-                                    <button onClick={() => setShowRedeemModal(false)} className="mt-4 text-xs text-gray-400 hover:text-gray-600">
+                                    <button onClick={() => setShowRedeemModal(false)} className="mt-6 w-full text-center text-xs text-gray-400 hover:text-gray-600">
                                         Close
                                     </button>
                                 </motion.div>
