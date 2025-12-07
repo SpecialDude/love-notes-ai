@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Wand2, Copy, Check, Eye, Heart, Loader2, Globe, Lock, Download, Calendar, Clock, ChevronRight, Ticket, Gift, MessageCircle, Link as LinkIcon, Key, Mail } from 'lucide-react';
+import { Sparkles, Wand2, Copy, Check, Eye, Heart, Loader2, Globe, Lock, Download, Calendar, Clock, ChevronRight, Ticket, Gift, MessageCircle, Link as LinkIcon, Key, Mail, Timer } from 'lucide-react';
 import { ThemeType, RelationshipType, LetterData, ThemeCategory, CouponData, CouponStyle } from '../types';
 import { THEMES, COUNTRY_CODES } from '../constants';
 import { generateOrEnhanceMessage, suggestTheme } from '../services/gemini';
@@ -37,6 +37,7 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
   const [hasCoupon, setHasCoupon] = useState(!!initialData?.coupon);
   const [couponTitle, setCouponTitle] = useState(initialData?.coupon?.title || '');
   const [couponStyle, setCouponStyle] = useState<CouponStyle>(initialData?.coupon?.style || 'GOLD');
+  const [couponValidity, setCouponValidity] = useState(initialData?.coupon?.validity || '');
   
   // Redemption Methods
   const [redemptionMethod, setRedemptionMethod] = useState<'WHATSAPP' | 'EMAIL'>(initialData?.coupon?.redemptionMethod || 'WHATSAPP');
@@ -99,6 +100,7 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
             setHasCoupon(true);
             setCouponTitle(initialData.coupon.title);
             setCouponStyle(initialData.coupon.style);
+            setCouponValidity(initialData.coupon.validity || '');
             setSecretCode(initialData.coupon.secretCode || '');
             setRedemptionMethod(initialData.coupon.redemptionMethod || 'WHATSAPP');
             setSenderEmail(initialData.coupon.senderEmail || '');
@@ -172,6 +174,7 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
         couponData = {
             title: couponTitle,
             style: couponStyle,
+            validity: couponValidity || 'Valid Forever',
             redemptionMethod,
             senderWhatsApp: fullWhatsApp,
             senderEmail: redemptionMethod === 'EMAIL' ? senderEmail : undefined,
@@ -462,6 +465,18 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
                                         ))}
                                     </div>
                                 </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-white/70 uppercase tracking-wider ml-1 flex items-center gap-1">
+                                        <Timer size={10} /> Validity <span className="text-rose-400">*</span>
+                                    </label>
+                                    <input 
+                                        value={couponValidity}
+                                        onChange={(e) => setCouponValidity(e.target.value)}
+                                        placeholder="e.g., Valid until Dec 31st, or No Expiration"
+                                        className="w-full bg-black/20 border border-white/20 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-white/30"
+                                    />
+                                </div>
                                 
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-white/70 uppercase tracking-wider ml-1">Redemption Method</label>
@@ -491,10 +506,10 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
                                                 <select 
                                                     value={countryCode}
                                                     onChange={(e) => setCountryCode(e.target.value)}
-                                                    className="bg-black/20 border border-white/20 rounded-lg px-2 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white/30 max-w-[100px]"
+                                                    className="bg-black/20 border border-white/20 rounded-lg px-2 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white/30 max-w-[120px]"
                                                 >
                                                     {COUNTRY_CODES.map(c => (
-                                                        <option key={c.code} value={c.code} className="bg-gray-800">{c.label}</option>
+                                                        <option key={c.code} value={c.code} className="bg-gray-800 text-white">{c.label}</option>
                                                     ))}
                                                 </select>
                                                 <input 
@@ -548,6 +563,7 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
                                     <div>
                                         <p className="text-[10px] uppercase tracking-widest font-bold opacity-60">Coupon Valid For</p>
                                         <p className="font-serif font-bold text-lg leading-tight">{couponTitle || 'Your Special Gift'}</p>
+                                        <p className="text-[10px] mt-1 opacity-70">{couponValidity || 'Enter Validity'}</p>
                                     </div>
                                 </div>
                             </div>
