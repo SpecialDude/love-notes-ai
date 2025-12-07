@@ -544,17 +544,19 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
                             </div>
                             <h1 className={`text-4xl md:text-5xl mb-8 ${theme.fontFamily} font-bold shrink-0 leading-tight`}>My Dearest {data.recipientName},</h1>
                             <div className={`text-lg md:text-2xl leading-relaxed whitespace-pre-wrap ${theme.fontFamily} opacity-95 pb-12`}>{data.content}</div>
+                            
+                            {/* --- JAGGY BOTTOM EDGE FOR TOP HALF --- */}
+                            {data.coupon && (
+                                <div 
+                                    className={`absolute bottom-0 left-0 w-full h-4 -mb-1 ${theme.paperColor} z-30`}
+                                    style={{ clipPath: jaggedClipPath, transform: 'rotate(180deg)' }}
+                                />
+                            )}
                         </div>
 
                         {/* --- IF COUPON: TEARABLE BOTTOM HALF --- */}
                         {data.coupon ? (
                             <div className="relative z-10">
-                                {/* Jagged Edge Visual Divider */}
-                                <div 
-                                    className={`relative z-20 w-full h-4 -mt-1 ${theme.paperColor}`}
-                                    style={{ clipPath: jaggedClipPath }}
-                                />
-                                
                                 {/* Bottom Tear-Off Section (Coupon + Signature) */}
                                 <motion.div
                                     className={`
@@ -571,8 +573,14 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
                                     } : {}}
                                     transition={{ duration: 1.5, ease: "easeInOut" }}
                                 >
+                                    {/* JAGGED TOP EDGE FOR BOTTOM HALF - Moves with the component */}
+                                    <div 
+                                        className={`absolute top-0 left-0 w-full h-4 -mt-3 ${theme.paperColor} z-30`}
+                                        style={{ clipPath: jaggedClipPath }}
+                                    />
+
                                     {/* Tap to Tear Text */}
-                                    <div className="w-full flex justify-center mb-6">
+                                    <div className="w-full flex justify-center mb-6 pt-4">
                                         <div className="bg-black/10 px-3 py-1 rounded-full text-[10px] uppercase tracking-widest font-bold backdrop-blur-sm group-hover:bg-black/20 transition-colors animate-pulse flex items-center gap-1">
                                             <Ticket size={12} /> Tap to Tear & Redeem
                                         </div>
@@ -636,17 +644,18 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
                                 opacity: 1 
                             }}
                         >
-                            {/* Jagged Top */}
-                             <div 
-                                className={`w-full h-8 -mb-1 ${theme.paperColor}`}
-                                style={{ clipPath: jaggedClipPath, background: THEMES[data.theme].previewColor }} // Use solid color fallback if texture fails in capture
-                             />
                              <div className={`
                                 ${theme.paperColor} ${theme.textColor} paper-texture 
-                                p-8 pt-6 flex flex-col items-center text-center
+                                p-8 pt-6 flex flex-col items-center text-center relative
                              `}>
+                                {/* Jagged Top Edge Visual for Image */}
+                                <div 
+                                    className={`absolute top-0 left-0 w-full h-4 -mt-3 ${theme.paperColor}`}
+                                    style={{ clipPath: jaggedClipPath }}
+                                />
+
                                 <div className={`
-                                    w-full rounded-lg border-2 border-dashed border-current p-6 relative
+                                    w-full rounded-lg border-2 border-dashed border-current p-6 relative mt-4
                                     ${data.coupon.style === 'GOLD' ? 'bg-yellow-50/50' : ''}
                                     ${data.coupon.style === 'ROSE' ? 'bg-rose-50/50' : ''}
                                 `}>
