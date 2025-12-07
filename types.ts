@@ -42,7 +42,7 @@ export enum RelationshipType {
 export interface ThemeConfig {
   id: ThemeType;
   name: string;
-  category: ThemeCategory; // New field for grouping
+  category: ThemeCategory;
   description: string;
   textColor: string;
   accentColor: string;
@@ -51,20 +51,22 @@ export interface ThemeConfig {
   paperColor: string;
   envelopeColor: string;
   musicUrl: string;
-  previewColor: string; // For the color swatch in selector
+  previewColor: string;
+  paperHex: string; // Required for Image Generation (SVG fill)
 }
+
+export type RedemptionMethod = 'WHATSAPP' | 'EMAIL';
 
 export type CouponStyle = 'GOLD' | 'SILVER' | 'ROSE' | 'BLUE';
 
 export interface CouponData {
   title: string;
   style: CouponStyle;
-  validity?: string;       // E.g. "Valid until Dec 31st"
-  redemptionMethod?: 'WHATSAPP' | 'EMAIL';
-  senderWhatsApp?: string; // For direct message redemption (Full number with country code)
-  senderEmail?: string;    // For email redemption
-  secretCode?: string;     // For Amazon codes, gift card links, etc.
-  redemptionLink?: string; // Optional direct link
+  redemptionMethod: RedemptionMethod;
+  senderWhatsApp?: string;
+  senderEmail?: string;
+  secretCode?: string;
+  // Validity removed as requested
 }
 
 export interface LetterData {
@@ -79,8 +81,8 @@ export interface LetterData {
   views: number;
   likes: number; 
   musicUrl?: string;
-  unlockDate?: string; // ISO String for Time Capsule
-  coupon?: CouponData; // Optional Love Coupon
+  unlockDate?: string;
+  coupon?: CouponData;
 }
 
 export interface GeminiResponse {

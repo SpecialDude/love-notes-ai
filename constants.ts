@@ -19,22 +19,6 @@ const getMusicEnv = (key: string, defaultUrl: string): string => {
   return defaultUrl;
 };
 
-// WhatsApp Country Codes (Simplified for Mobile)
-export const COUNTRY_CODES = [
-  { code: '234', label: '🇳🇬 +234' },
-  { code: '1', label: '🇺🇸 +1' },
-  { code: '44', label: '🇬🇧 +44' },
-  { code: '233', label: '🇬🇭 +233' },
-  { code: '27', label: '🇿🇦 +27' },
-  { code: '91', label: '🇮🇳 +91' },
-  { code: '254', label: '🇰🇪 +254' },
-  { code: '61', label: '🇦🇺 +61' },
-  { code: '49', label: '🇩🇪 +49' },
-  { code: '33', label: '🇫🇷 +33' },
-  { code: '971', label: '🇦🇪 +971' },
-  { code: '0', label: '🌍 Other' }
-];
-
 // Default Music Links (Internet Archive MP3s)
 const CLASSIC_PIANO = "https://ia800305.us.archive.org/3/items/LisztLiebestraumNo3/Liszt_Liebestraum_No3.mp3";
 const JAZZ = "https://ia800303.us.archive.org/34/items/ScottJoplinTheEntertainer1902/Scott%20Joplin%20-%20The%20Entertainer%20%281902%29.mp3";
@@ -54,10 +38,24 @@ const MUSIC_URLS = {
   
   // Holiday Music
   WINTER: getMusicEnv('WINTER', SILENT_NIGHT),
-  HOLLY: getMusicEnv('HOLLY', "https://ia902606.us.archive.org/14/items/jingle-bells-mp-3-music/Jingle%20Bells%20%28mp3music.io%29.mp3"), // Jingle Bells or similar
-  GINGERBREAD: getMusicEnv('GINGERBREAD', "https://ia800303.us.archive.org/15/items/WeWishYouAMerryChristmas_584/WeWishYouAMerryChristmas.mp3"), // We Wish You A Merry Christmas
-  FROST: getMusicEnv('FROST', "https://ia801407.us.archive.org/33/items/DanceOfTheSugarPlumFairy_220/DanceOfTheSugarPlumFairy.mp3"), // Sugar Plum Fairy
+  HOLLY: getMusicEnv('HOLLY', "https://ia902606.us.archive.org/14/items/jingle-bells-mp-3-music/Jingle%20Bells%20%28mp3music.io%29.mp3"), 
+  GINGERBREAD: getMusicEnv('GINGERBREAD', "https://ia800303.us.archive.org/15/items/WeWishYouAMerryChristmas_584/WeWishYouAMerryChristmas.mp3"), 
+  FROST: getMusicEnv('FROST', "https://ia801407.us.archive.org/33/items/DanceOfTheSugarPlumFairy_220/DanceOfTheSugarPlumFairy.mp3"), 
 };
+
+export const COUNTRY_CODES = [
+  { code: '+234', flag: '🇳🇬' }, 
+  { code: '+1', flag: '🇺🇸' },
+  { code: '+44', flag: '🇬🇧' },
+  { code: '+233', flag: '🇬🇭' },
+  { code: '+27', flag: '🇿🇦' },
+  { code: '+254', flag: '🇰🇪' },
+  { code: '+91', flag: '🇮🇳' },
+  { code: '+86', flag: '🇨🇳' },
+  { code: '+81', flag: '🇯🇵' },
+  { code: '+49', flag: '🇩🇪' },
+  { code: '+33', flag: '🇫🇷' },
+];
 
 export const THEMES: Record<ThemeType, ThemeConfig> = {
   // --- HOLIDAY ---
@@ -71,6 +69,7 @@ export const THEMES: Record<ThemeType, ThemeConfig> = {
     fontFamily: "font-elegant",
     bgGradient: "bg-gradient-to-b from-slate-900 via-blue-950 to-slate-900",
     paperColor: "bg-slate-50",
+    paperHex: "#f8fafc",
     envelopeColor: "bg-blue-900",
     musicUrl: MUSIC_URLS.WINTER,
     previewColor: "#1e3a8a"
@@ -84,10 +83,11 @@ export const THEMES: Record<ThemeType, ThemeConfig> = {
     accentColor: "bg-red-600",
     fontFamily: "font-serif",
     bgGradient: "bg-gradient-to-br from-green-900 via-green-800 to-red-950",
-    paperColor: "bg-[#f0fdf4]", // Very light green
+    paperColor: "bg-[#f0fdf4]", 
+    paperHex: "#f0fdf4",
     envelopeColor: "bg-red-800",
     musicUrl: MUSIC_URLS.HOLLY,
-    previewColor: "#14532d" // Dark Green
+    previewColor: "#14532d"
   },
   [ThemeType.GINGERBREAD]: {
     id: ThemeType.GINGERBREAD,
@@ -98,10 +98,11 @@ export const THEMES: Record<ThemeType, ThemeConfig> = {
     accentColor: "bg-amber-600",
     fontFamily: "font-casual",
     bgGradient: "bg-gradient-to-br from-amber-900 via-orange-900 to-brown-900",
-    paperColor: "bg-[#fff8e1]", // Creamy
-    envelopeColor: "bg-[#8B4513]", // SaddleBrown
+    paperColor: "bg-[#fff8e1]",
+    paperHex: "#fff8e1",
+    envelopeColor: "bg-[#8B4513]",
     musicUrl: MUSIC_URLS.GINGERBREAD,
-    previewColor: "#92400e" // Amber
+    previewColor: "#92400e"
   },
   [ThemeType.FROST]: {
     id: ThemeType.FROST,
@@ -113,9 +114,10 @@ export const THEMES: Record<ThemeType, ThemeConfig> = {
     fontFamily: "font-cinematic",
     bgGradient: "bg-gradient-to-tr from-cyan-100 via-white to-blue-100",
     paperColor: "bg-white",
+    paperHex: "#ffffff",
     envelopeColor: "bg-cyan-200",
     musicUrl: MUSIC_URLS.FROST,
-    previewColor: "#a5f3fc" // Light Cyan
+    previewColor: "#a5f3fc"
   },
 
   // --- ROMANTIC ---
@@ -129,6 +131,7 @@ export const THEMES: Record<ThemeType, ThemeConfig> = {
     fontFamily: "font-elegant",
     bgGradient: "bg-gradient-to-br from-rose-950 via-red-900 to-black",
     paperColor: "bg-[#fff0f0]",
+    paperHex: "#fff0f0",
     envelopeColor: "bg-rose-900",
     musicUrl: MUSIC_URLS.VELVET,
     previewColor: "#881337"
@@ -143,6 +146,7 @@ export const THEMES: Record<ThemeType, ThemeConfig> = {
     fontFamily: "font-handwriting",
     bgGradient: "bg-gradient-to-br from-orange-400 via-rose-400 to-purple-500",
     paperColor: "bg-orange-50",
+    paperHex: "#fff7ed",
     envelopeColor: "bg-orange-600",
     musicUrl: MUSIC_URLS.SUNSET,
     previewColor: "#f97316"
@@ -159,6 +163,7 @@ export const THEMES: Record<ThemeType, ThemeConfig> = {
     fontFamily: "font-serif",
     bgGradient: "bg-[conic-gradient(at_top_right,_var(--tw-gradient-stops))] from-slate-900 via-indigo-950 to-black",
     paperColor: "bg-indigo-950",
+    paperHex: "#1e1b4b",
     envelopeColor: "bg-slate-900",
     musicUrl: MUSIC_URLS.MIDNIGHT,
     previewColor: "#1e1b4b"
@@ -173,6 +178,7 @@ export const THEMES: Record<ThemeType, ThemeConfig> = {
     fontFamily: "font-serif",
     bgGradient: "bg-gradient-to-b from-cyan-800 to-blue-950",
     paperColor: "bg-cyan-50",
+    paperHex: "#ecfeff",
     envelopeColor: "bg-cyan-900",
     musicUrl: MUSIC_URLS.OCEAN,
     previewColor: "#0e7490"
@@ -187,6 +193,7 @@ export const THEMES: Record<ThemeType, ThemeConfig> = {
     fontFamily: "font-casual",
     bgGradient: "bg-gradient-to-tr from-pink-200 via-purple-100 to-blue-100",
     paperColor: "bg-white",
+    paperHex: "#ffffff",
     envelopeColor: "bg-pink-300",
     musicUrl: MUSIC_URLS.PASTEL,
     previewColor: "#f472b6"
@@ -203,6 +210,7 @@ export const THEMES: Record<ThemeType, ThemeConfig> = {
     fontFamily: "font-elegant",
     bgGradient: "bg-gradient-to-br from-stone-800 via-emerald-900 to-stone-900",
     paperColor: "bg-[#f3f4f1]",
+    paperHex: "#f3f4f1",
     envelopeColor: "bg-stone-700",
     musicUrl: MUSIC_URLS.EARTH,
     previewColor: "#064e3b"
@@ -217,6 +225,7 @@ export const THEMES: Record<ThemeType, ThemeConfig> = {
     fontFamily: "font-modern",
     bgGradient: "bg-gradient-to-b from-gray-300 to-gray-500",
     paperColor: "bg-white",
+    paperHex: "#ffffff",
     envelopeColor: "bg-gray-900",
     musicUrl: MUSIC_URLS.NOIR,
     previewColor: "#111827"
@@ -231,6 +240,7 @@ export const THEMES: Record<ThemeType, ThemeConfig> = {
     fontFamily: "font-vintage",
     bgGradient: "bg-gradient-to-br from-amber-100 to-orange-100",
     paperColor: "bg-[#fffbef]",
+    paperHex: "#fffbef",
     envelopeColor: "bg-[#8c6b4a]",
     musicUrl: MUSIC_URLS.VINTAGE,
     previewColor: "#92400e"

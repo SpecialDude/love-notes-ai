@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Wand2, Copy, Check, Eye, Heart, Loader2, Globe, Lock, Download, Calendar, Clock, ChevronRight, Ticket, Gift, MessageCircle, Link as LinkIcon, Key, Mail, Timer } from 'lucide-react';
-import { ThemeType, RelationshipType, LetterData, ThemeCategory, CouponData, CouponStyle } from '../types';
+import { Sparkles, Wand2, Copy, Check, Eye, Heart, Loader2, Globe, Lock, Download, Calendar, Clock, ChevronRight, Gift, Mail, Phone, Ticket, Key, MessageCircle, Timer } from 'lucide-react';
+import { ThemeType, RelationshipType, LetterData, ThemeCategory, CouponData, RedemptionMethod, CouponStyle } from '../types';
 import { THEMES, COUNTRY_CODES } from '../constants';
 import { generateOrEnhanceMessage, suggestTheme } from '../services/gemini';
 import { saveLetterToCloud } from '../services/firebase';
@@ -32,20 +32,17 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
   // Time Capsule State
   const [isTimeCapsule, setIsTimeCapsule] = useState(!!initialData?.unlockDate);
   const [unlockDate, setUnlockDate] = useState(initialData?.unlockDate || '');
-  
+
   // Coupon State
   const [hasCoupon, setHasCoupon] = useState(!!initialData?.coupon);
   const [couponTitle, setCouponTitle] = useState(initialData?.coupon?.title || '');
   const [couponStyle, setCouponStyle] = useState<CouponStyle>(initialData?.coupon?.style || 'GOLD');
-  const [couponValidity, setCouponValidity] = useState(initialData?.coupon?.validity || '');
-  
-  // Redemption Methods
-  const [redemptionMethod, setRedemptionMethod] = useState<'WHATSAPP' | 'EMAIL'>(initialData?.coupon?.redemptionMethod || 'WHATSAPP');
-  const [countryCode, setCountryCode] = useState('234'); // Default Nigeria
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [redemptionMethod, setRedemptionMethod] = useState<RedemptionMethod>(initialData?.coupon?.redemptionMethod || 'WHATSAPP');
+  const [countryCode, setCountryCode] = useState(initialData?.coupon?.senderWhatsApp?.split(' ')[0] || '+234');
+  const [phoneNumber, setPhoneNumber] = useState(initialData?.coupon?.senderWhatsApp?.split(' ')[1] || '');
   const [senderEmail, setSenderEmail] = useState(initialData?.coupon?.senderEmail || '');
   const [secretCode, setSecretCode] = useState(initialData?.coupon?.secretCode || '');
-
+  
   const [generatedLink, setGeneratedLink] = useState('');
   const [isThinking, setIsThinking] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -55,21 +52,7 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
   // PWA Install State
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
-  // Parse initial phone number into code and number
-  useEffect(() => {
-    if (initialData?.coupon?.senderWhatsApp) {
-        // Simple logic to extract code if it matches one of our list, else put everything in number
-        const full = initialData.coupon.senderWhatsApp;
-        const found = COUNTRY_CODES.find(c => full.startsWith(c.code));
-        if (found) {
-            setCountryCode(found.code);
-            setPhoneNumber(full.substring(found.code.length));
-        } else {
-            setCountryCode('0');
-            setPhoneNumber(full);
-        }
-    }
-  }, [initialData]);
+  const couponPresets = ['Dinner Date', 'Movie Night', 'Back Massage', 'Weekend Trip'];
 
   // Set Page Title and PWA Listener
   useEffect(() => {
@@ -100,13 +83,20 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
             setHasCoupon(true);
             setCouponTitle(initialData.coupon.title);
             setCouponStyle(initialData.coupon.style);
-            setCouponValidity(initialData.coupon.validity || '');
-            setSecretCode(initialData.coupon.secretCode || '');
-            setRedemptionMethod(initialData.coupon.redemptionMethod || 'WHATSAPP');
+            setRedemptionMethod(initialData.coupon.redemptionMethod);
+            if (initialData.coupon.senderWhatsApp) {
+                 const parts = initialData.coupon.senderWhatsApp.split(' ');
+                 if (parts.length > 1) {
+                     setCountryCode(parts[0]);
+                     setPhoneNumber(parts[1]);
+                 } else {
+                     setPhoneNumber(initialData.coupon.senderWhatsApp);
+                 }
+            }
             setSenderEmail(initialData.coupon.senderEmail || '');
+            setSecretCode(initialData.coupon.secretCode || '');
         }
         setAiMode(initialData.content.length > 50 ? 'POLISH' : 'DRAFT');
-        // Update category based on initial theme
         if (initialData.theme) {
             setActiveCategory(THEMES[initialData.theme].category);
         }
@@ -123,10 +113,8 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
         showToast("Please enter names first so the AI knows who is writing!", 'error');
         return;
     }
-    
     setIsThinking(true);
     const result = await generateOrEnhanceMessage(content, senderName || 'Me', recipientName || 'My Love', relationship, aiMode);
-    
     setContent(result);
     setAiMode('POLISH'); 
     
@@ -137,7 +125,6 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
             setActiveCategory(THEMES[suggested].category);
         }
     }
-    
     setIsThinking(false);
     showToast("✨ AI magic applied!", 'success');
   };
@@ -162,23 +149,15 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
     }
     const safeMusicUrl = music ?? null;
 
-    let couponData: CouponData | undefined = undefined;
-    if (hasCoupon && couponTitle) {
-        // Construct full number
-        let fullWhatsApp = undefined;
-        if (redemptionMethod === 'WHATSAPP' && phoneNumber) {
-             const cleanNum = phoneNumber.replace(/\D/g, '');
-             fullWhatsApp = countryCode === '0' ? cleanNum : `${countryCode}${cleanNum}`;
-        }
-
-        couponData = {
-            title: couponTitle,
+    let coupon: CouponData | undefined = undefined;
+    if (hasCoupon) {
+        coupon = {
+            title: couponTitle || "A Special Treat",
             style: couponStyle,
-            validity: couponValidity || 'Valid Forever',
             redemptionMethod,
-            senderWhatsApp: fullWhatsApp,
-            senderEmail: redemptionMethod === 'EMAIL' ? senderEmail : undefined,
-            secretCode: secretCode || undefined
+            secretCode: secretCode || undefined,
+            senderWhatsApp: redemptionMethod === 'WHATSAPP' && phoneNumber ? `${countryCode} ${phoneNumber}` : undefined,
+            senderEmail: redemptionMethod === 'EMAIL' && senderEmail ? senderEmail : undefined
         };
     }
 
@@ -194,52 +173,61 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
         likes: 0, 
         musicUrl: safeMusicUrl as string | undefined,
         unlockDate: isTimeCapsule && unlockDate ? unlockDate : undefined,
-        coupon: couponData
+        coupon
     };
   };
 
+  const validateInputs = () => {
+      if (!senderName || !recipientName) {
+          showToast("Please enter names!", 'error');
+          return false;
+      }
+      if (!content) {
+          showToast("Please write a message!", 'error');
+          return false;
+      }
+      if (hasCoupon) {
+          if (!couponTitle) {
+              showToast("Please enter a title for your gift!", 'error');
+              return false;
+          }
+          if (redemptionMethod === 'WHATSAPP' && !phoneNumber) {
+              showToast("Please enter your WhatsApp number!", 'error');
+              return false;
+          }
+          if (redemptionMethod === 'EMAIL' && !senderEmail) {
+              showToast("Please enter your Email!", 'error');
+              return false;
+          }
+      }
+      return true;
+  };
+
   const handlePreview = () => {
-    if (!content) {
-        showToast("Please write a message first!", 'error');
-        return;
-    }
+    if (!validateInputs()) return;
     onPreview(getLetterData());
   };
 
   const fireContinuousConfetti = () => {
       const duration = 3000;
       const end = Date.now() + duration;
-
       (function frame() {
         confetti({
-          particleCount: 5,
-          angle: 60,
-          spread: 55,
-          origin: { x: 0, y: 0.8 },
+          particleCount: 5, angle: 60, spread: 55, origin: { x: 0, y: 0.8 },
           colors: ['#ff0000', '#ffa500', '#ffffff'],
         });
-        
         confetti({
-          particleCount: 5,
-          angle: 120,
-          spread: 55,
-          origin: { x: 1, y: 0.8 },
+          particleCount: 5, angle: 120, spread: 55, origin: { x: 1, y: 0.8 },
           colors: ['#ff0000', '#ffa500', '#ffffff'],
         });
-
-        if (Date.now() < end) {
-          requestAnimationFrame(frame);
-        }
+        if (Date.now() < end) requestAnimationFrame(frame);
       }());
   };
 
   const handleGenerateLink = async () => {
-    if (!content) {
-        showToast("Please write a message first!", 'error');
-        return;
-    }
+    if (!validateInputs()) return;
     
-    // Validation for time capsule
+    // Time Capsule validation
     if (isTimeCapsule) {
         if (!unlockDate) {
             showToast("Please select a date to unlock your Time Capsule!", 'error');
@@ -289,14 +277,6 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
   ];
 
   const filteredThemes = Object.values(THEMES).filter(t => t.category === activeCategory);
-
-  const couponPresets = [
-    "One Home Cooked Meal 🍝",
-    "A Movie Night 🎬",
-    "One Back Massage 💆",
-    "A Yes Day ✅",
-    "Breakfast in Bed 🥞"
-  ];
 
   return (
     <div className={`min-h-screen relative flex items-center justify-center p-4 pt-20 sm:p-4 transition-colors duration-700 ${currentTheme.bgGradient}`}>
@@ -404,7 +384,7 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
                 </div>
             </div>
 
-            {/* Gift/Coupon Section */}
+            {/* --- COUPON SECTION (Updated Design) --- */}
             <div className="bg-white/5 border border-white/10 rounded-xl p-4 transition-all">
                  <div className="flex items-center justify-between">
                      <div className="flex items-center gap-2">
@@ -465,18 +445,6 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
                                         ))}
                                     </div>
                                 </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-white/70 uppercase tracking-wider ml-1 flex items-center gap-1">
-                                        <Timer size={10} /> Validity <span className="text-rose-400">*</span>
-                                    </label>
-                                    <input 
-                                        value={couponValidity}
-                                        onChange={(e) => setCouponValidity(e.target.value)}
-                                        placeholder="e.g., Valid until Dec 31st, or No Expiration"
-                                        className="w-full bg-black/20 border border-white/20 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-white/30"
-                                    />
-                                </div>
                                 
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-white/70 uppercase tracking-wider ml-1">Redemption Method</label>
@@ -509,7 +477,7 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
                                                     className="bg-black/20 border border-white/20 rounded-lg px-2 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white/30 max-w-[120px]"
                                                 >
                                                     {COUNTRY_CODES.map(c => (
-                                                        <option key={c.code} value={c.code} className="bg-gray-800 text-white">{c.label}</option>
+                                                        <option key={c.code} value={c.code} className="bg-gray-800 text-white">{c.flag} {c.code}</option>
                                                     ))}
                                                 </select>
                                                 <input 
@@ -563,7 +531,6 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
                                     <div>
                                         <p className="text-[10px] uppercase tracking-widest font-bold opacity-60">Coupon Valid For</p>
                                         <p className="font-serif font-bold text-lg leading-tight">{couponTitle || 'Your Special Gift'}</p>
-                                        <p className="text-[10px] mt-1 opacity-70">{couponValidity || 'Enter Validity'}</p>
                                     </div>
                                 </div>
                             </div>
@@ -612,7 +579,6 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
                                     <Check size={14} className="text-white drop-shadow-md" />
                                 </div>
                             )}
-                            {/* Decorative element */}
                             <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
                         </button>
                     ))}
