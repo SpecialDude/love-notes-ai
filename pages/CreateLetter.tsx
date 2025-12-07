@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Wand2, Copy, Check, Eye, Heart, Loader2, Globe, Lock, Download, Calendar, Clock, ChevronRight } from 'lucide-react';
-import { ThemeType, RelationshipType, LetterData, ThemeCategory } from '../types';
+import { Sparkles, Wand2, Copy, Check, Eye, Heart, Loader2, Globe, Lock, Download, Calendar, Clock, ChevronRight, Ticket, Gift, MessageCircle, Link as LinkIcon, Key } from 'lucide-react';
+import { ThemeType, RelationshipType, LetterData, ThemeCategory, CouponData, CouponStyle } from '../types';
 import { THEMES } from '../constants';
 import { generateOrEnhanceMessage, suggestTheme } from '../services/gemini';
 import { saveLetterToCloud } from '../services/firebase';
@@ -33,6 +33,13 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
   const [isTimeCapsule, setIsTimeCapsule] = useState(!!initialData?.unlockDate);
   const [unlockDate, setUnlockDate] = useState(initialData?.unlockDate || '');
   
+  // Coupon State
+  const [hasCoupon, setHasCoupon] = useState(!!initialData?.coupon);
+  const [couponTitle, setCouponTitle] = useState(initialData?.coupon?.title || '');
+  const [couponStyle, setCouponStyle] = useState<CouponStyle>(initialData?.coupon?.style || 'GOLD');
+  const [senderWhatsApp, setSenderWhatsApp] = useState(initialData?.coupon?.senderWhatsApp || '');
+  const [secretCode, setSecretCode] = useState(initialData?.coupon?.secretCode || '');
+
   const [generatedLink, setGeneratedLink] = useState('');
   const [isThinking, setIsThinking] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -66,6 +73,13 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
         if (initialData.unlockDate) {
             setIsTimeCapsule(true);
             setUnlockDate(initialData.unlockDate);
+        }
+        if (initialData.coupon) {
+            setHasCoupon(true);
+            setCouponTitle(initialData.coupon.title);
+            setCouponStyle(initialData.coupon.style);
+            setSenderWhatsApp(initialData.coupon.senderWhatsApp || '');
+            setSecretCode(initialData.coupon.secretCode || '');
         }
         setAiMode(initialData.content.length > 50 ? 'POLISH' : 'DRAFT');
         // Update category based on initial theme
@@ -124,6 +138,16 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
     }
     const safeMusicUrl = music ?? null;
 
+    let couponData: CouponData | undefined = undefined;
+    if (hasCoupon && couponTitle) {
+        couponData = {
+            title: couponTitle,
+            style: couponStyle,
+            senderWhatsApp: senderWhatsApp || undefined,
+            secretCode: secretCode || undefined
+        };
+    }
+
     return {
         senderName,
         recipientName,
@@ -135,7 +159,8 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
         views: 0,
         likes: 0, 
         musicUrl: safeMusicUrl as string | undefined,
-        unlockDate: isTimeCapsule && unlockDate ? unlockDate : undefined
+        unlockDate: isTimeCapsule && unlockDate ? unlockDate : undefined,
+        coupon: couponData
     };
   };
 
@@ -230,6 +255,14 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
   ];
 
   const filteredThemes = Object.values(THEMES).filter(t => t.category === activeCategory);
+
+  const couponPresets = [
+    "One Home Cooked Meal 🍝",
+    "A Movie Night 🎬",
+    "One Back Massage 💆",
+    "A Yes Day ✅",
+    "Breakfast in Bed 🥞"
+  ];
 
   return (
     <div className={`min-h-screen relative flex items-center justify-center p-4 pt-20 sm:p-4 transition-colors duration-700 ${currentTheme.bgGradient}`}>
@@ -335,6 +368,117 @@ const CreateLetter: React.FC<Props> = ({ onPreview, initialData }) => {
                         `}
                     />
                 </div>
+            </div>
+
+            {/* Gift/Coupon Section */}
+            <div className="bg-white/5 border border-white/10 rounded-xl p-4 transition-all">
+                 <div className="flex items-center justify-between">
+                     <div className="flex items-center gap-2">
+                         <Gift size={16} className="text-yellow-400" />
+                         <span className="text-sm font-bold text-white">Attach a Gift</span>
+                     </div>
+                     <button 
+                        onClick={() => setHasCoupon(!hasCoupon)}
+                        className={`relative w-11 h-6 rounded-full transition-colors ${hasCoupon ? 'bg-green-500' : 'bg-gray-600'}`}
+                     >
+                         <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${hasCoupon ? 'translate-x-5' : 'translate-x-0'}`} />
+                     </button>
+                 </div>
+                 
+                 <AnimatePresence>
+                    {hasCoupon && (
+                        <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="overflow-hidden"
+                        >
+                            <div className="pt-4 space-y-4">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-white/70 uppercase tracking-wider ml-1">Select Coupon Style</label>
+                                    <div className="flex gap-2">
+                                        {[
+                                            { id: 'GOLD', color: 'bg-yellow-400' },
+                                            { id: 'SILVER', color: 'bg-gray-300' },
+                                            { id: 'ROSE', color: 'bg-rose-400' },
+                                            { id: 'BLUE', color: 'bg-blue-400' }
+                                        ].map((s) => (
+                                            <button
+                                                key={s.id}
+                                                onClick={() => setCouponStyle(s.id as CouponStyle)}
+                                                className={`w-8 h-8 rounded-full border-2 ${s.color} ${couponStyle === s.id ? 'border-white scale-110 shadow-lg' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-white/70 uppercase tracking-wider ml-1">What are you offering?</label>
+                                    <input 
+                                        value={couponTitle}
+                                        onChange={(e) => setCouponTitle(e.target.value)}
+                                        placeholder="e.g., A Free Massage, Amazon Gift Card"
+                                        className="w-full bg-black/20 border border-white/20 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-white/30"
+                                    />
+                                    <div className="flex flex-wrap gap-2 mt-2">
+                                        {couponPresets.map((preset) => (
+                                            <button
+                                                key={preset}
+                                                onClick={() => setCouponTitle(preset)}
+                                                className="px-2 py-1 bg-white/5 hover:bg-white/10 border border-white/10 rounded-md text-[10px] text-white/80 transition-colors"
+                                            >
+                                                {preset}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                     <div className="space-y-2">
+                                        <label className="text-xs font-bold text-white/70 uppercase tracking-wider ml-1 flex items-center gap-1">
+                                            <MessageCircle size={10} /> WhatsApp Number (Optional)
+                                        </label>
+                                        <input 
+                                            value={senderWhatsApp}
+                                            onChange={(e) => setSenderWhatsApp(e.target.value)}
+                                            placeholder="e.g. 15550001234"
+                                            className="w-full bg-black/20 border border-white/20 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-white/30"
+                                        />
+                                        <p className="text-[10px] text-white/40">For direct redemption messages.</p>
+                                     </div>
+                                     <div className="space-y-2">
+                                        <label className="text-xs font-bold text-white/70 uppercase tracking-wider ml-1 flex items-center gap-1">
+                                            <Key size={10} /> Secret Gift Code/Link
+                                        </label>
+                                        <input 
+                                            value={secretCode}
+                                            onChange={(e) => setSecretCode(e.target.value)}
+                                            placeholder="e.g. ABCD-1234-XYZ"
+                                            className="w-full bg-black/20 border border-white/20 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-white/30"
+                                        />
+                                        <p className="text-[10px] text-white/40">Hidden until the coupon is torn!</p>
+                                     </div>
+                                </div>
+                                
+                                {/* Preview */}
+                                <div className={`
+                                    mt-4 p-4 rounded-lg border-2 border-dashed relative flex items-center gap-4
+                                    ${couponStyle === 'GOLD' ? 'bg-gradient-to-r from-yellow-100 to-yellow-50 border-yellow-400 text-yellow-900' : ''}
+                                    ${couponStyle === 'SILVER' ? 'bg-gradient-to-r from-gray-100 to-gray-50 border-gray-400 text-gray-800' : ''}
+                                    ${couponStyle === 'ROSE' ? 'bg-gradient-to-r from-rose-100 to-rose-50 border-rose-400 text-rose-900' : ''}
+                                    ${couponStyle === 'BLUE' ? 'bg-gradient-to-r from-blue-100 to-blue-50 border-blue-400 text-blue-900' : ''}
+                                `}>
+                                    <div className="w-10 h-10 rounded-full border-2 border-current flex items-center justify-center shrink-0 opacity-50">
+                                        <Ticket size={20} />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] uppercase tracking-widest font-bold opacity-60">Coupon Valid For</p>
+                                        <p className="font-serif font-bold text-lg leading-tight">{couponTitle || 'Your Special Gift'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                 </AnimatePresence>
             </div>
 
             {/* Theme Selector - Redesigned */}

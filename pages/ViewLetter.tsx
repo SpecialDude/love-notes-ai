@@ -1,7 +1,6 @@
-
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Eye, Heart, Lock, Gift } from 'lucide-react';
+import { ArrowLeft, Eye, Heart, Lock, Gift, Ticket, Download, MessageCircle, Copy, Check } from 'lucide-react';
 import { LetterData, ThemeType, ThemeCategory } from '../types';
 import { THEMES } from '../constants';
 import { incrementViewCount, toggleLike } from '../services/firebase';
@@ -11,6 +10,7 @@ import AnimatedBackground from '../components/AnimatedBackground';
 import MusicPlayer from '../components/MusicPlayer';
 import confetti from 'canvas-confetti';
 import { useToast } from '../components/Toast';
+import html2canvas from 'html2canvas';
 
 interface Props {
   data: LetterData;
@@ -207,6 +207,10 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
   const [likesCount, setLikesCount] = useState(data.likes || 0);
   const [isLiked, setIsLiked] = useState(false);
   
+  // Coupon State
+  const [isCouponTorn, setIsCouponTorn] = useState(false);
+  const couponRef = useRef<HTMLDivElement>(null);
+  
   // Time Capsule State
   const [isLocked, setIsLocked] = useState(false);
   const [timeLeft, setTimeLeft] = useState<{days: number, hours: number, mins: number, secs: number} | null>(null);
@@ -345,6 +349,49 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
     }
   };
 
+  const handleRedeemCoupon = async () => {
+     if (!data.coupon || isCouponTorn) return;
+     
+     setIsCouponTorn(true);
+     
+     // Celebration Confetti
+     confetti({
+        particleCount: 40,
+        spread: 70,
+        origin: { x: 0.5, y: 0.8 },
+        colors: ['#FFD700', '#C0C0C0', '#ffffff'],
+        shapes: ['star']
+     });
+     
+     // Generate Image for download
+     if (couponRef.current) {
+         try {
+             const canvas = await html2canvas(couponRef.current, { backgroundColor: null, scale: 2 });
+             const link = document.createElement('a');
+             link.download = `LoveCoupon-${data.recipientName}.png`;
+             link.href = canvas.toDataURL();
+             link.click();
+             showToast("Ticket downloaded! 🎟️", "success");
+         } catch (e) {
+             console.error("Image gen failed", e);
+         }
+     }
+
+     const coupon = data.coupon;
+     const message = `Hey! I am officially redeeming my Love Coupon for: ${coupon.title} 🎟️✨${coupon.secretCode ? ` (Code: ${coupon.secretCode})` : ''}`;
+     
+     // Open WhatsApp if number provided, else generic share
+     if (coupon.senderWhatsApp) {
+         setTimeout(() => {
+            window.open(`https://wa.me/${coupon.senderWhatsApp}?text=${encodeURIComponent(message)}`, '_blank');
+         }, 1500);
+     } else {
+         setTimeout(() => {
+            window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+         }, 1500);
+     }
+  };
+
   const theme = THEMES[data.theme || ThemeType.VELVET];
   const isHoliday = theme.category === ThemeCategory.HOLIDAY;
 
@@ -461,6 +508,102 @@ const ViewLetter: React.FC<Props> = ({ data, onBack }) => {
                             </div>
                             <h1 className={`text-4xl md:text-5xl mb-8 ${theme.fontFamily} font-bold shrink-0 leading-tight`}>My Dearest {data.recipientName},</h1>
                             <div className={`text-lg md:text-2xl leading-relaxed whitespace-pre-wrap ${theme.fontFamily} opacity-95`}>{data.content}</div>
+                            
+                            {/* --- COUPON ATTACHMENT WITH TEAR ANIMATION --- */}
+                            {data.coupon && (
+                                <div className="mt-12 py-8 relative">
+                                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white/50 backdrop-blur-sm px-2 text-[10px] uppercase tracking-widest text-black/40 z-20">
+                                        Tap to Tear & Redeem
+                                    </div>
+                                    
+                                    <div 
+                                        className={`relative mx-auto max-w-sm shadow-xl rounded-lg overflow-hidden group cursor-pointer
+                                            ${data.coupon.style === 'GOLD' ? 'bg-gradient-to-br from-yellow-50 via-yellow-100 to-yellow-50 border border-yellow-400 text-yellow-900' : ''}
+                                            ${data.coupon.style === 'SILVER' ? 'bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 border border-gray-400 text-gray-800' : ''}
+                                            ${data.coupon.style === 'ROSE' ? 'bg-gradient-to-br from-rose-50 via-rose-100 to-rose-50 border border-rose-300 text-rose-900' : ''}
+                                            ${data.coupon.style === 'BLUE' ? 'bg-gradient-to-br from-blue-50 via-blue-100 to-blue-50 border border-blue-300 text-blue-900' : ''}
+                                        `}
+                                        onClick={handleRedeemCoupon}
+                                        ref={couponRef}
+                                    >
+                                        {/* Stub (Top Part) */}
+                                        <div className="p-4 flex items-center justify-between bg-black/5 relative z-10">
+                                            <div className="flex items-center gap-2 opacity-70">
+                                                <Gift size={16} />
+                                                <span className="text-[10px] uppercase tracking-widest font-bold">Love Coupon</span>
+                                            </div>
+                                            <div className="w-6 h-6 rounded-full border border-current flex items-center justify-center opacity-50">
+                                                <Ticket size={12} />
+                                            </div>
+                                        </div>
+
+                                        {/* Perforation Line */}
+                                        <div className="relative h-0 border-t-2 border-dashed border-black/20 -mt-[1px] z-10">
+                                            <div className="absolute -left-2 -top-2 w-4 h-4 rounded-full bg-white" />
+                                            <div className="absolute -right-2 -top-2 w-4 h-4 rounded-full bg-white" />
+                                        </div>
+
+                                        {/* Ticket (Bottom Part - Tears Away) */}
+                                        <motion.div 
+                                            className="p-6 flex flex-col items-center text-center gap-2 bg-white/20 backdrop-blur-sm"
+                                            animate={isCouponTorn ? { 
+                                                rotate: 15, 
+                                                y: 100, 
+                                                opacity: 0, 
+                                                pointerEvents: 'none'
+                                            } : {}}
+                                            transition={{ duration: 0.8, ease: "easeIn" }}
+                                            style={{ transformOrigin: "top left" }}
+                                        >
+                                            <h3 className="font-serif text-2xl font-bold leading-tight">{data.coupon.title}</h3>
+                                            <p className="text-xs opacity-60 uppercase tracking-wider mt-1">Valid Forever</p>
+                                            
+                                            <div className="mt-4 px-6 py-2 bg-black/5 rounded-full text-xs font-bold uppercase tracking-wider group-hover:bg-black/10 transition-colors">
+                                                Redeem Gift
+                                            </div>
+                                        </motion.div>
+                                    </div>
+
+                                    {/* Reveal Message (Underneath) */}
+                                    {isCouponTorn && (
+                                        <motion.div 
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            className="absolute inset-0 flex flex-col items-center justify-center text-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 p-6"
+                                        >
+                                            <p className="text-green-600 font-bold mb-2 flex items-center gap-2"><Check size={16} /> Redeemed!</p>
+                                            <p className="text-sm text-gray-600 mb-4">You've claimed this gift.</p>
+                                            
+                                            {data.coupon.secretCode && (
+                                                <div className="mb-4 bg-gray-200 px-4 py-2 rounded-md font-mono text-sm border border-gray-300 select-all">
+                                                    <span className="text-xs text-gray-500 block mb-1 uppercase tracking-widest">Secret Code</span>
+                                                    {data.coupon.secretCode}
+                                                </div>
+                                            )}
+                                            
+                                            <div className="flex gap-2">
+                                                {data.coupon.redemptionLink && (
+                                                    <a href={data.coupon.redemptionLink} target="_blank" rel="noreferrer" className="text-xs bg-blue-500 text-white px-3 py-2 rounded-md hover:bg-blue-600 flex items-center gap-1">
+                                                        <Gift size={12} /> View Gift
+                                                    </a>
+                                                )}
+                                                {data.coupon.senderWhatsApp && (
+                                                     <a 
+                                                        href={`https://wa.me/${data.coupon.senderWhatsApp}?text=${encodeURIComponent(`I am redeeming: ${data.coupon.title}`)}`}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="text-xs bg-green-500 text-white px-3 py-2 rounded-md hover:bg-green-600 flex items-center gap-1"
+                                                     >
+                                                        <MessageCircle size={12} /> WhatsApp
+                                                     </a>
+                                                )}
+                                            </div>
+                                            <p className="text-[10px] text-gray-400 mt-4">Image saved to downloads</p>
+                                        </motion.div>
+                                    )}
+                                </div>
+                            )}
+
                             <div className="mt-12 pt-8 text-right shrink-0">
                                 <p className="text-sm opacity-60 mb-2 font-serif italic">Yours truly,</p>
                                 <p className={`text-3xl md:text-5xl ${theme.fontFamily} font-bold transform -rotate-2 inline-block`}>{data.senderName}</p>

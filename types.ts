@@ -54,6 +54,16 @@ export interface ThemeConfig {
   previewColor: string; // For the color swatch in selector
 }
 
+export type CouponStyle = 'GOLD' | 'SILVER' | 'ROSE' | 'BLUE';
+
+export interface CouponData {
+  title: string;
+  style: CouponStyle;
+  senderWhatsApp?: string; // For direct message redemption
+  secretCode?: string;     // For Amazon codes, gift card links, etc.
+  redemptionLink?: string; // Optional direct link
+}
+
 export interface LetterData {
   id?: string;
   senderName: string;
@@ -67,6 +77,7 @@ export interface LetterData {
   likes: number; 
   musicUrl?: string;
   unlockDate?: string; // ISO String for Time Capsule
+  coupon?: CouponData; // Optional Love Coupon
 }
 
 export interface GeminiResponse {
